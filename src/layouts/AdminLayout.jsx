@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useState } from 'react';
 import EmailSetupModal from '../components/EmailSetupModal';
+import BrandLogo from '../components/BrandLogo';
 
 const items = [
   { to: '/admin', icon: FiHome, label: 'Dashboard', end: true },
@@ -23,15 +24,7 @@ export default function AdminLayout() {
       {/* Sidebar - desktop */}
       <aside className="hidden lg:flex flex-col w-64 shrink-0 h-screen sticky top-0 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
         <div className="p-6 border-b border-slate-100 dark:border-slate-800">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-accent-500 grid place-items-center text-white font-bold">
-              A
-            </div>
-            <div>
-              <p className="font-bold">Admin Console</p>
-              <p className="text-xs text-slate-500">Leave Management</p>
-            </div>
-          </div>
+          <BrandLogo subtitle="Admin Console" />
         </div>
         <nav className="flex-1 p-4 space-y-1">
           {items.map(({ to, icon: Icon, label, end }) => (
@@ -70,6 +63,7 @@ export default function AdminLayout() {
             <button onClick={() => setOpen(false)} className="self-end p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800">
               <FiX />
             </button>
+            <BrandLogo subtitle="Admin Console" className="mt-2 mb-4" />
             <nav className="space-y-1 mt-2">
               {items.map(({ to, icon: Icon, label, end }) => (
                 <NavLink

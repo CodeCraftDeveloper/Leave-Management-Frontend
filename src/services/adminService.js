@@ -8,6 +8,8 @@ export const getEmployees = (params) =>
   api.get('/admin/employees', { params }).then((r) => r.data);
 export const getEmployeeDetail = (id) =>
   api.get(`/admin/employees/${id}`).then((r) => r.data);
+export const updateEmployeeWorkDetails = (id, payload) =>
+  api.patch(`/admin/employees/${id}/work-details`, payload).then((r) => r.data);
 
 export const applyLeaveOnBehalf = (payload) =>
   api.post('/admin/leaves', payload).then((r) => r.data);

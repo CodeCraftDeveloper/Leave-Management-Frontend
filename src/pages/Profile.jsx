@@ -17,11 +17,21 @@ const Input = forwardRef(({ icon: Icon, label, ...props }, ref) => (
   </div>
 ));
 
+const ReadOnlyField = ({ icon: Icon, label, value }) => (
+  <div>
+    <label className="label">{label}</label>
+    <div className="input pl-10 relative bg-slate-100 text-slate-600 dark:bg-slate-900/60 dark:text-slate-300">
+      {Icon && <Icon className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />}
+      <span className="block truncate">{value || 'Not assigned'}</span>
+    </div>
+  </div>
+);
+
 export default function Profile() {
   const { user, updateUser, logout } = useAuth();
 
   const { register, handleSubmit, formState: { isSubmitting } } = useForm({
-    defaultValues: { name: user?.name, phone: user?.phone, department: user?.department, designation: user?.designation },
+    defaultValues: { name: user?.name, phone: user?.phone },
   });
   const { register: rp, handleSubmit: hp, reset, formState: { isSubmitting: ps } } = useForm();
 
@@ -62,8 +72,8 @@ export default function Profile() {
         <h3 className="font-semibold">Personal Information</h3>
         <Input icon={FiUser} label="Full Name" {...register('name')} />
         <Input icon={FiPhone} label="Phone" {...register('phone')} />
-        <Input icon={FiBriefcase} label="Department" {...register('department')} />
-        <Input icon={FiBriefcase} label="Designation" {...register('designation')} />
+        <ReadOnlyField icon={FiBriefcase} label="Department" value={user?.department} />
+        <ReadOnlyField icon={FiBriefcase} label="Designation" value={user?.designation} />
         <button disabled={isSubmitting} className="btn-primary w-full">
           {isSubmitting ? 'Saving…' : 'Save Changes'}
         </button>

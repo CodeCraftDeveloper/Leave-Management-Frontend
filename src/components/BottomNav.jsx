@@ -11,7 +11,7 @@ const items = [
 
 export default function BottomNav() {
   return (
-    <nav className="lg:hidden fixed bottom-0 inset-x-0 z-30 glass border-t border-slate-200 dark:border-slate-800 safe-bottom">
+    <nav className="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-slate-950 text-slate-100 border-t border-slate-800 shadow-[0_-8px_24px_rgba(2,6,23,0.45)] safe-bottom">
       <ul className="grid grid-cols-5 max-w-md mx-auto">
         {items.map(({ to, icon: Icon, label, end }) => (
           <li key={to}>
@@ -21,8 +21,8 @@ export default function BottomNav() {
               className={({ isActive }) =>
                 `flex flex-col items-center justify-center py-2.5 px-2 gap-0.5 text-[11px] font-medium transition ${
                   isActive
-                    ? 'text-primary-600 dark:text-primary-400'
-                    : 'text-slate-500 dark:text-slate-400'
+                    ? 'text-primary-300'
+                    : 'text-slate-400'
                 }`
               }
             >
@@ -30,7 +30,7 @@ export default function BottomNav() {
                 <>
                   <div
                     className={`w-10 h-7 grid place-items-center rounded-full transition ${
-                      isActive ? 'bg-primary-100 dark:bg-primary-500/20' : ''
+                      isActive ? 'bg-primary-500/20' : ''
                     }`}
                   >
                     <Icon className="text-lg" />

@@ -5,17 +5,8 @@ import { useTheme } from '../context/ThemeContext';
 import { useEffect, useState } from 'react';
 import { getNotifications } from '../services/notificationService';
 
-const titles = {
-  '/': 'Dashboard',
-  '/apply': 'Apply Leave',
-  '/history': 'Leave History',
-  '/calendar': 'Calendar',
-  '/notifications': 'Notifications',
-  '/profile': 'Profile',
-};
-
 export default function TopNavbar() {
-  const { user, logout } = useAuth();
+  const { logout } = useAuth();
   const { theme, toggle } = useTheme();
   const { pathname } = useLocation();
   const [unread, setUnread] = useState(0);
@@ -25,23 +16,39 @@ export default function TopNavbar() {
   }, [pathname]);
 
   return (
-    <header className="sticky top-0 z-20 glass border-b border-slate-200 dark:border-slate-800">
-      <div className="flex items-center justify-between px-4 lg:px-8 py-3">
-        <div className="min-w-0">
-          <p className="text-xs text-slate-500">Hi, {user?.name?.split(' ')[0]}</p>
-          <h2 className="text-lg font-bold truncate">{titles[pathname] || 'Leave Portal'}</h2>
-        </div>
-        <div className="flex items-center gap-1">
-          <button onClick={toggle} className="p-2.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800">
+    <header className="sticky top-0 z-20 bg-white text-slate-900 border-b border-slate-200 shadow-sm">
+      <div className="flex h-16 items-center justify-between gap-3 px-4 lg:px-8">
+        <Link
+          to="/"
+          aria-label="Go to dashboard"
+          className="grid h-11 w-14 shrink-0 place-items-center overflow-hidden"
+        >
+          <img src="/image.avif" alt="Prem Industries" className="h-10 w-14 object-contain" />
+        </Link>
+
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            onClick={toggle}
+            aria-label="Toggle theme"
+            className="h-10 w-10 grid place-items-center rounded-full text-slate-700 transition hover:bg-slate-100 active:bg-slate-200"
+          >
             {theme === 'dark' ? <FiSun /> : <FiMoon />}
           </button>
-          <Link to="/notifications" className="p-2.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 relative">
+          <Link
+            to="/notifications"
+            aria-label="Notifications"
+            className="h-10 w-10 grid place-items-center rounded-full text-slate-700 transition hover:bg-slate-100 active:bg-slate-200 relative"
+          >
             <FiBell />
             {unread > 0 && (
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500" />
+              <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white" />
             )}
           </Link>
-          <button onClick={logout} className="lg:hidden p-2.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800">
+          <button
+            onClick={logout}
+            aria-label="Logout"
+            className="lg:hidden h-10 w-10 grid place-items-center rounded-full text-slate-700 transition hover:bg-slate-100 active:bg-slate-200"
+          >
             <FiLogOut />
           </button>
         </div>

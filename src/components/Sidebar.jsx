@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { FiHome, FiPlusCircle, FiCalendar, FiBell, FiUser, FiLogOut, FiClock } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
+import BrandLogo from './BrandLogo';
 
 const items = [
   { to: '/', icon: FiHome, label: 'Dashboard', end: true },
@@ -16,15 +17,7 @@ export default function Sidebar() {
   return (
     <aside className="hidden lg:flex flex-col w-64 shrink-0 h-screen sticky top-0 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
       <div className="p-6 border-b border-slate-100 dark:border-slate-800">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-accent-500 grid place-items-center text-white font-bold">
-            LM
-          </div>
-          <div>
-            <p className="font-bold">Leave App</p>
-            <p className="text-xs text-slate-500">Employee Portal</p>
-          </div>
-        </div>
+        <BrandLogo subtitle="Employee Portal" />
       </div>
       <nav className="flex-1 p-4 space-y-1">
         {items.map(({ to, icon: Icon, label, end }) => (

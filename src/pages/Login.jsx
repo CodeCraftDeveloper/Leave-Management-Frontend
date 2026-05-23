@@ -5,6 +5,7 @@ import { FiUser, FiLock, FiEye, FiEyeOff } from 'react-icons/fi';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
+import BrandLogo from '../components/BrandLogo';
 
 export default function Login() {
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm();
@@ -30,8 +31,8 @@ export default function Login() {
         <div className="absolute -top-20 -left-20 w-80 h-80 rounded-full bg-white/10 blur-3xl" />
         <div className="absolute bottom-0 right-0 w-96 h-96 rounded-full bg-accent-400/30 blur-3xl" />
         <div className="relative max-w-md">
-          <div className="w-14 h-14 rounded-2xl bg-white/15 backdrop-blur grid place-items-center text-2xl font-bold mb-6">LM</div>
-          <h1 className="text-4xl font-bold leading-tight">Manage your leaves the smart way.</h1>
+          <BrandLogo size="full" subtitle="" textClassName="text-white" className="mb-6" />
+          <h1 className="text-4xl font-bold leading-tight">Prem Industries Leave Portal</h1>
           <p className="mt-4 text-white/80">Apply, track and manage leaves seamlessly from your phone, tablet or desktop.</p>
         </div>
       </div>
@@ -43,9 +44,8 @@ export default function Login() {
           className="w-full max-w-md"
         >
           <div className="mb-8 text-center">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary-500 to-accent-500 grid place-items-center text-white text-2xl font-bold mx-auto mb-4 shadow-card">
-              LM
-            </div>
+            <BrandLogo size="full" showText={false} className="justify-center mb-4" />
+            <h1 className="text-sm font-semibold text-primary-600 dark:text-primary-300 mb-2">Prem Industries</h1>
             <h2 className="text-2xl font-bold">Welcome back</h2>
             <p className="text-sm text-slate-500 mt-1">Sign in to continue to your portal</p>
           </div>

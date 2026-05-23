@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
-import Calendar from 'react-calendar';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { FiPlus, FiTrash2, FiCalendar } from 'react-icons/fi';
+import { FiPlus, FiTrash2 } from 'react-icons/fi';
 import PageHeader from '../../components/PageHeader';
 import Modal from '../../components/Modal';
+import MonthCalendar from '../../components/MonthCalendar';
 import { getCalendarLeaves, getHolidays, createHoliday, deleteHoliday } from '../../services/leaveService';
 import EmptyState from '../../components/EmptyState';
-import { leaveTypeLabel, leaveTypeColors, fmtDate } from '../../utils/format';
+import { leaveTypeLabel, leaveTypeColors } from '../../utils/format';
 import { ListSkeleton } from '../../components/Skeleton';
 
 export default function AdminCalendar() {
@@ -15,6 +15,7 @@ export default function AdminCalendar() {
   const [holidays, setHolidays] = useState([]);
   const [loading, setLoading] = useState(true);
   const [date, setDate] = useState(new Date());
+  const [month, setMonth] = useState(new Date());
   
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -66,26 +67,24 @@ export default function AdminCalendar() {
     return map;
   }, [holidays]);
 
-  const tileClassName = ({ date }) => {
-    const dateStr = date.toDateString();
-    if (holidaysByDate.has(dateStr)) return 'holiday-day';
-    return '';
-  };
-
-  const tileContent = ({ date, view }) => {
-    if (view !== 'month') return null;
-    const dateStr = date.toDateString();
-    
-    // If it's a holiday, don't overlap with a leaf dot, or do so neatly
-    const items = leaveByDate.get(dateStr);
-    if (!items?.length) return null;
-    return (
-      <div className="flex justify-center mt-1">
-        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-        {items.length > 1 && <span className="ml-0.5 text-[8px] text-slate-500">+{items.length - 1}</span>}
-      </div>
-    );
-  };
+  const events = useMemo(() => {
+    const holidayEvents = holidays.map((h) => ({
+      id: 'h-' + h._id,
+      title: h.name,
+      startDate: h.date,
+      endDate: h.date,
+      kind: 'holiday',
+    }));
+    const leaveEvents = leaves.map((l) => ({
+      id: 'l-' + l._id,
+      title: `${l.employee?.name || 'Employee'} · ${leaveTypeLabel[l.leaveType] || 'Leave'}`,
+      startDate: l.startDate,
+      endDate: l.endDate,
+      kind: 'leave-' + (l.status || 'approved'),
+      data: l,
+    }));
+    return [...holidayEvents, ...leaveEvents];
+  }, [holidays, leaves]);
 
   const handleAddHoliday = async (e) => {
     e.preventDefault();
@@ -131,16 +130,13 @@ export default function AdminCalendar() {
             {loading ? (
               <div className="h-72 skeleton" />
             ) : (
-              <Calendar onChange={setDate} value={date} tileClassName={tileClassName} tileContent={tileContent} />
+              <MonthCalendar
+                events={events}
+                month={month}
+                onChangeMonth={setMonth}
+                onClickDay={(d) => setDate(d)}
+              />
             )}
-            <div className="flex flex-wrap gap-4 mt-4 text-xs font-medium border-t border-slate-100 dark:border-slate-800 pt-3">
-              <span className="inline-flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> Approved Leaves
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <span className="w-4 h-2.5 rounded bg-indigo-150 border border-dashed border-indigo-400" style={{ background: 'rgba(99, 102, 241, 0.15)' }} /> Official Holiday
-              </span>
-            </div>
           </motion.div>
 
           <div className="card p-4">
