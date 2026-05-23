@@ -71,7 +71,7 @@ export default function ApplyOnBehalfModal({ open, onClose, employee, onSuccess 
       return;
     }
     if (totalDays === 0) {
-      toast.error('The selected duration contains no working days');
+      toast.error('The selected duration contains no countable leave days');
       return;
     }
     if (isOverBalance) {

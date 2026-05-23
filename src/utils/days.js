@@ -7,22 +7,13 @@ export const calculateDays = (start, end, holidays = []) => {
 
   if (e < s) return 0;
 
-  const holidayTimes = new Set(
-    holidays.map((h) => {
-      const d = new Date(h.date || h);
-      d.setHours(0, 0, 0, 0);
-      return d.getTime();
-    })
-  );
-
   let count = 0;
   const current = new Date(s);
   while (current <= e) {
     const dayOfWeek = current.getDay();
-    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-    const isHoliday = holidayTimes.has(current.getTime());
+    const isWeeklyOff = dayOfWeek === 0;
 
-    if (!isWeekend && !isHoliday) {
+    if (!isWeeklyOff) {
       count++;
     }
     current.setDate(current.getDate() + 1);

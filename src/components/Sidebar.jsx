@@ -6,8 +6,8 @@ import BrandLogo from './BrandLogo';
 const items = [
   { to: '/', icon: FiHome, label: 'Dashboard', end: true },
   { to: '/apply', icon: FiPlusCircle, label: 'Apply Leave' },
-  { to: '/history', icon: FiClock, label: 'Leave History' },
-  { to: '/calendar', icon: FiCalendar, label: 'Calendar' },
+  { to: '/calendar?tab=history', icon: FiClock, label: 'Leave History' },
+  { to: '/calendar', icon: FiCalendar, label: 'Calendar', end: true },
   { to: '/notifications', icon: FiBell, label: 'Notifications' },
   { to: '/profile', icon: FiUser, label: 'Profile' },
 ];

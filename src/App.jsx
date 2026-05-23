@@ -34,7 +34,7 @@ export default function App() {
       >
         <Route index element={<Dashboard />} />
         <Route path="apply" element={<ApplyLeave />} />
-        <Route path="history" element={<LeaveHistory />} />
+        <Route path="history" element={<Navigate to="/calendar?tab=history" replace />} />
         <Route path="calendar" element={<CalendarPage />} />
         <Route path="notifications" element={<Notifications />} />
         <Route path="profile" element={<Profile />} />

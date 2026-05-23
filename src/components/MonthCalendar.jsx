@@ -11,6 +11,7 @@ import {
   isBefore,
   startOfDay,
   format,
+  parseISO,
 } from 'date-fns';
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -24,7 +25,11 @@ const kindStyles = {
   'leave-rejected': 'bg-rose-400/70 text-white',
 };
 
-const parseDate = (d) => (d instanceof Date ? d : new Date(d));
+const parseDate = (d) => {
+  if (!d) return new Date();
+  if (d instanceof Date) return d;
+  return parseISO(d);
+};
 
 function buildWeeks(month) {
   const gridStart = startOfWeek(startOfMonth(month), { weekStartsOn: 0 });
@@ -85,6 +90,7 @@ export default function MonthCalendar({
   onChangeMonth,
   onClickDay,
   disablePastDays = false,
+  selectedDate,
 }) {
   const today = startOfDay(new Date());
   const weeks = useMemo(() => buildWeeks(month), [month]);
@@ -102,6 +108,18 @@ export default function MonthCalendar({
     const eventsOnDay = events.filter((e) => {
       const s = startOfDay(parseDate(e.startDate));
       const en = startOfDay(parseDate(e.endDate));
+      if (isNaN(s) || isNaN(en)) return false;
+      return s <= dayKey && dayKey <= en;
+    }).sort((a, b) => parseDate(a.startDate) - parseDate(b.startDate));
+    onClickDay?.(dayKey, eventsOnDay);
+  };
+
+  const handleEventClick = (e, event) => {
+    e.stopPropagation();
+    const dayKey = startOfDay(parseDate(event.startDate));
+    const eventsOnDay = events.filter((ev) => {
+      const s = startOfDay(parseDate(ev.startDate));
+      const en = startOfDay(parseDate(ev.endDate));
       if (isNaN(s) || isNaN(en)) return false;
       return s <= dayKey && dayKey <= en;
     }).sort((a, b) => parseDate(a.startDate) - parseDate(b.startDate));
@@ -140,7 +158,10 @@ export default function MonthCalendar({
 
       <div className="grid grid-cols-7 text-xs font-semibold text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800 pb-2 mb-1">
         {WEEKDAYS.map((d) => (
-          <div key={d} className="text-center">{d}</div>
+          <div key={d} className="text-center">
+            <span className="hidden sm:inline">{d}</span>
+            <span className="sm:hidden">{d[0]}</span>
+          </div>
         ))}
       </div>
 
@@ -160,6 +181,7 @@ export default function MonthCalendar({
                 const isToday = isSameDay(day, today);
                 const isPast = isBefore(startOfDay(day), today);
                 const disabled = disablePastDays && isPast;
+                const isSelected = selectedDate && isSameDay(day, parseDate(selectedDate));
                 return (
                   <button
                     key={di}
@@ -167,7 +189,7 @@ export default function MonthCalendar({
                     onClick={() => handleCellClick(day)}
                     disabled={disabled}
                     className={[
-                      'relative text-left p-1.5 sm:p-2 border-r border-slate-100 dark:border-slate-800 last:border-r-0',
+                      'relative text-left p-1 sm:p-2 border-r border-slate-100 dark:border-slate-800 last:border-r-0 min-w-0 overflow-hidden',
                       'transition',
                       disabled
                         ? 'opacity-60 cursor-not-allowed'
@@ -177,12 +199,14 @@ export default function MonthCalendar({
                     <div className="flex items-center justify-end">
                       <span
                         className={[
-                          'text-xs sm:text-sm w-7 h-7 inline-flex items-center justify-center rounded-full',
+                          'text-xs sm:text-sm w-6 h-6 sm:w-7 sm:h-7 inline-flex items-center justify-center rounded-full transition-all',
                           isToday
-                            ? 'bg-primary-600 text-white font-semibold'
-                            : inMonth
-                              ? 'text-slate-700 dark:text-slate-200'
-                              : 'text-slate-400 dark:text-slate-600',
+                            ? `bg-primary-600 text-white font-semibold shadow-sm ${isSelected ? 'ring-2 ring-offset-2 ring-primary-600 dark:ring-offset-slate-900' : ''}`
+                            : isSelected
+                              ? 'border-2 border-primary-600 text-primary-600 dark:text-primary-400 font-semibold bg-primary-50 dark:bg-primary-900/20'
+                              : inMonth
+                                ? 'text-slate-700 dark:text-slate-200'
+                                : 'text-slate-400 dark:text-slate-600',
                         ].join(' ')}
                       >
                         {day.getDate()}
@@ -194,10 +218,12 @@ export default function MonthCalendar({
 
               <div className="absolute inset-x-0 top-9 sm:top-10 pointer-events-none">
                 {placed.map(({ event, startCol, endCol, lane }) => (
-                  <div
+                  <button
+                    type="button"
                     key={event.id + '-' + wi}
+                    onClick={(e) => handleEventClick(e, event)}
                     className={[
-                      'absolute h-5 sm:h-6 rounded text-[10px] sm:text-xs leading-5 sm:leading-6 px-1.5 truncate',
+                      'absolute h-5 sm:h-6 rounded text-[10px] sm:text-xs leading-5 sm:leading-6 px-1.5 text-left pointer-events-auto cursor-pointer hover:brightness-95 active:scale-[0.98] transition-all font-medium border-0 overflow-hidden',
                       kindStyles[event.kind] || 'bg-slate-400 text-white',
                     ].join(' ')}
                     style={{
@@ -207,8 +233,8 @@ export default function MonthCalendar({
                     }}
                     title={event.title}
                   >
-                    {event.title}
-                  </div>
+                    <span className="block truncate w-full">{event.title}</span>
+                  </button>
                 ))}
                 {Object.entries(overflowByCol).map(([col, count]) => (
                   <div

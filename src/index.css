@@ -25,25 +25,25 @@ body {
 
 @layer components {
   .card {
-    @apply bg-white dark:bg-slate-900 rounded-2xl shadow-soft border border-slate-100 dark:border-slate-800;
+    @apply bg-surface-container-lowest dark:bg-slate-900 rounded-xl shadow-[0px_4px_20px_rgba(27,43,72,0.05)] border border-outline-variant/30;
   }
   .btn {
     @apply inline-flex items-center justify-center gap-2 font-medium rounded-xl px-4 py-2.5 transition active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed;
   }
   .btn-primary {
-    @apply btn bg-gradient-to-r from-primary-600 to-accent-500 text-white shadow-card hover:shadow-lg hover:opacity-95;
+    @apply btn bg-primary text-on-primary font-semibold hover:bg-primary/90 transition-colors shadow-sm h-12;
   }
   .btn-ghost {
-    @apply btn bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700;
+    @apply btn bg-surface-container-low dark:bg-slate-800 text-primary dark:text-slate-200 hover:bg-surface-container-high dark:hover:bg-slate-700;
   }
   .btn-outline {
-    @apply btn border border-slate-200 dark:border-slate-700 bg-transparent hover:bg-slate-50 dark:hover:bg-slate-800;
+    @apply btn border border-outline-variant dark:border-slate-700 bg-transparent hover:bg-surface-container-low dark:hover:bg-slate-800;
   }
   .input {
-    @apply w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-3 text-base outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition placeholder:text-slate-400;
+    @apply w-full rounded-xl border border-outline-variant bg-surface-container-lowest px-4 py-3 text-base outline-none focus:border-2 focus:border-primary focus:ring-0 transition placeholder:text-slate-400 h-12;
   }
   .label {
-    @apply text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 block;
+    @apply text-sm font-semibold text-primary dark:text-slate-300 mb-1.5 block;
   }
   .chip {
     @apply inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full;
@@ -59,4 +59,14 @@ body {
 /* Safe area for mobile bottom nav */
 .safe-bottom {
   padding-bottom: env(safe-area-inset-bottom);
+}
+
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+.material-symbols-outlined[data-weight="fill"] {
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+.icon-fill {
+  font-variation-settings: 'FILL' 1;
 }

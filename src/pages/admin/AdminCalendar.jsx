@@ -9,6 +9,15 @@ import { getCalendarLeaves, getHolidays, createHoliday, deleteHoliday } from '..
 import EmptyState from '../../components/EmptyState';
 import { leaveTypeLabel, leaveTypeColors } from '../../utils/format';
 import { ListSkeleton } from '../../components/Skeleton';
+import { startOfDay as dateFnsStartOfDay, parseISO } from 'date-fns';
+
+const parseDate = (d) => {
+  if (!d) return new Date();
+  if (d instanceof Date) return d;
+  return parseISO(d);
+};
+
+const startOfDay = (d) => dateFnsStartOfDay(parseDate(d));
 
 export default function AdminCalendar() {
   const [leaves, setLeaves] = useState([]);
@@ -19,6 +28,7 @@ export default function AdminCalendar() {
   
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
     name: '',
@@ -44,28 +54,44 @@ export default function AdminCalendar() {
     loadData();
   }, []);
 
-  const leaveByDate = useMemo(() => {
-    const map = new Map();
-    leaves.forEach((l) => {
-      const start = new Date(l.startDate);
-      const end = new Date(l.endDate);
-      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-        const key = d.toDateString();
-        if (!map.has(key)) map.set(key, []);
-        map.get(key).push(l);
-      }
-    });
-    return map;
-  }, [leaves]);
+  const handleClickDay = (d) => {
+    setDate(d);
+    const dayKey = startOfDay(d);
+    const dayKeyMs = dayKey.getTime();
 
-  const holidaysByDate = useMemo(() => {
-    const map = new Map();
-    holidays.forEach((h) => {
-      const key = new Date(h.date).toDateString();
-      map.set(key, h);
+    const hasLeaves = leaves.some((l) => {
+      const s = startOfDay(l.startDate);
+      const en = startOfDay(l.endDate);
+      return s.getTime() <= dayKeyMs && dayKeyMs <= en.getTime();
     });
-    return map;
-  }, [holidays]);
+
+    const hasHoliday = holidays.some((h) => {
+      const dHoliday = startOfDay(h.date);
+      return dHoliday.getTime() === dayKeyMs;
+    });
+
+    if (hasLeaves || hasHoliday) {
+      setDetailsModalOpen(true);
+    }
+  };
+
+  const { selectedLeaves, selectedHoliday } = useMemo(() => {
+    const dayKey = startOfDay(date);
+    const dayKeyMs = dayKey.getTime();
+
+    const leavesOnDay = leaves.filter((l) => {
+      const s = startOfDay(l.startDate);
+      const en = startOfDay(l.endDate);
+      return s.getTime() <= dayKeyMs && dayKeyMs <= en.getTime();
+    });
+
+    const holidayOnDay = holidays.find((h) => {
+      const d = startOfDay(h.date);
+      return d.getTime() === dayKeyMs;
+    });
+
+    return { selectedLeaves: leavesOnDay, selectedHoliday: holidayOnDay };
+  }, [date, leaves, holidays]);
 
   const events = useMemo(() => {
     const holidayEvents = holidays.map((h) => ({
@@ -117,11 +143,8 @@ export default function AdminCalendar() {
     }
   };
 
-  const selectedLeaves = leaveByDate.get(date.toDateString()) || [];
-  const selectedHoliday = holidaysByDate.get(date.toDateString());
-
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 max-w-full overflow-hidden">
       <PageHeader title="Leave Calendar" subtitle="All approved leaves and official holidays" />
 
       <div className="grid lg:grid-cols-3 gap-5">
@@ -134,7 +157,8 @@ export default function AdminCalendar() {
                 events={events}
                 month={month}
                 onChangeMonth={setMonth}
-                onClickDay={(d) => setDate(d)}
+                onClickDay={handleClickDay}
+                selectedDate={date}
               />
             )}
           </motion.div>
@@ -191,7 +215,7 @@ export default function AdminCalendar() {
         </div>
 
         <div className="space-y-4">
-          <div className="card p-4 flex flex-col max-h-[550px]">
+          <div className="card p-4 flex flex-col max-h-[550px] overflow-hidden">
             <div className="flex justify-between items-center pb-3 border-b border-slate-100 dark:border-slate-800 mb-3">
               <h3 className="font-semibold">Company Holiday List</h3>
               <button
@@ -202,7 +226,7 @@ export default function AdminCalendar() {
                 <FiPlus className="w-4 h-4" />
               </button>
             </div>
-            <div className="space-y-3 overflow-y-auto pr-1 flex-1">
+            <div className="space-y-3 overflow-y-auto overflow-x-hidden pr-1 flex-1">
               {loading ? (
                 <ListSkeleton count={3} />
               ) : holidays.length === 0 ? (
@@ -211,7 +235,7 @@ export default function AdminCalendar() {
                 holidays.map((h) => (
                   <div
                     key={h._id}
-                    className="flex justify-between items-center py-2.5 px-3 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 hover:bg-slate-50 dark:hover:bg-slate-900 transition"
+                    className="flex justify-between items-center py-2.5 px-3 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 hover:bg-slate-50 dark:hover:bg-slate-900 transition w-full min-w-0"
                   >
                     <div>
                       <h4 className="font-semibold text-sm text-slate-800 dark:text-slate-200">{h.name}</h4>
@@ -276,6 +300,49 @@ export default function AdminCalendar() {
             </button>
           </div>
         </form>
+      </Modal>
+
+      <Modal
+        open={detailsModalOpen}
+        onClose={() => setDetailsModalOpen(false)}
+        title={`Events on ${date.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}`}
+      >
+        {selectedHoliday && (
+          <div className="bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/50 p-4 rounded-xl flex items-start gap-3.5 mb-3 text-indigo-900 dark:text-indigo-200">
+            <div className="w-10 h-10 rounded-lg bg-indigo-100 dark:bg-indigo-900 grid place-items-center text-indigo-600 dark:text-indigo-400 font-bold shrink-0">
+              H
+            </div>
+            <div>
+              <h4 className="font-bold text-base">{selectedHoliday.name}</h4>
+              <p className="text-sm text-indigo-700/80 dark:text-indigo-300/80 mt-0.5">
+                {selectedHoliday.description || 'Official Company Holiday'}
+              </p>
+            </div>
+          </div>
+        )}
+        {selectedLeaves.length > 0 && (
+          <div className="space-y-3">
+            {selectedLeaves.map((l) => (
+              <div key={l._id} className="card p-4 flex justify-between items-start gap-3">
+                <div>
+                  <p className="font-semibold text-slate-800 dark:text-slate-200">{l.employee?.name}</p>
+                  <p className="text-xs text-slate-500">
+                    {l.employee?.employeeId} • {l.employee?.department}
+                  </p>
+                  <p className="text-xs text-slate-500 mt-1">
+                    {l.isHalfDay
+                      ? `Half-day (${l.halfDaySession === 'first_half' ? 'First Half' : 'Second Half'})`
+                      : `${l.totalDays} day(s)`
+                    }
+                  </p>
+                  <span className={`chip mt-2.5 inline-block ${leaveTypeColors[l.leaveType]}`}>
+                    {leaveTypeLabel[l.leaveType]}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </Modal>
     </div>
   );

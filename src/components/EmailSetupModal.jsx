@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
-import { FiMail, FiAlertCircle } from 'react-icons/fi';
+import { FiMail, FiAlertCircle, FiLock } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { setEmail as setEmailApi } from '../services/authService';
@@ -98,6 +98,13 @@ export default function EmailSetupModal() {
             >
               {submitting ? 'Saving…' : 'Save email & continue'}
             </button>
+
+            <div className="flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 p-3 text-amber-900 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-100">
+              <FiLock className="mt-0.5 shrink-0" />
+              <p className="text-xs leading-relaxed">
+                After adding your email, open Profile and change your password to keep your account secure.
+              </p>
+            </div>
 
             <p className="text-[11px] text-slate-500 text-center">
               You must provide an email to use the portal. This dialog cannot be dismissed.

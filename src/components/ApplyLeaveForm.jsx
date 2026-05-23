@@ -1,7 +1,6 @@
 import { useForm } from 'react-hook-form';
 import { useMemo, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FiFileText, FiUpload, FiSend } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { applyLeave, getHolidays } from '../services/leaveService';
 import { calculateDays } from '../utils/days';
@@ -60,7 +59,7 @@ export default function ApplyLeaveForm({ defaultDate, onSubmitted }) {
       return;
     }
     if (totalDays === 0) {
-      toast.error('The selected duration contains no working days');
+      toast.error('The selected duration contains no countable leave days');
       return;
     }
 
@@ -85,101 +84,133 @@ export default function ApplyLeaveForm({ defaultDate, onSubmitted }) {
       initial={{ y: 10, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       onSubmit={handleSubmit(onSubmit)}
-      className="space-y-4 sm:space-y-5"
+      className="space-y-5"
     >
-      <div>
-        <label className="label">Leave Type</label>
-        <select className="input text-sm sm:text-base px-3.5 sm:px-4 py-2.5 sm:py-3" {...register('leaveType', { required: true })}>
-          {types.map((t) => (
-            <option key={t.value} value={t.value}>{t.label}</option>
-          ))}
-        </select>
+      {/* Leave Type */}
+      <div className="flex flex-col gap-1.5">
+        <label className="text-sm font-semibold text-primary dark:text-slate-300">Leave Type</label>
+        <div className="relative">
+          <select
+            className="w-full h-[48px] appearance-none bg-surface-container-lowest border border-outline-variant rounded-xl px-4 text-base text-on-surface focus:outline-none focus:border-2 focus:border-primary focus:ring-0 transition"
+            {...register('leaveType', { required: true })}
+          >
+            {types.map((t) => (
+              <option key={t.value} value={t.value}>{t.label}</option>
+            ))}
+          </select>
+          <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-outline pointer-events-none">expand_more</span>
+        </div>
       </div>
 
-      <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-900/30 p-3 sm:p-3.5 rounded-xl border border-slate-100 dark:border-slate-800">
+      {/* Half Day Checkbox */}
+      <div className="flex items-center gap-3 bg-surface-container-low dark:bg-slate-900/30 p-3.5 rounded-xl border border-outline-variant/20">
         <input
           id="isHalfDay"
           type="checkbox"
-          className="w-4 h-4 rounded text-primary-600 focus:ring-primary-500 border-slate-300 dark:border-slate-700"
+          className="w-4 h-4 rounded text-primary focus:ring-primary border-outline-variant"
           {...register('isHalfDay')}
         />
-        <label htmlFor="isHalfDay" className="text-sm font-medium leading-snug text-slate-700 dark:text-slate-200 cursor-pointer select-none">
+        <label htmlFor="isHalfDay" className="text-sm font-medium text-on-surface-variant cursor-pointer select-none leading-none">
           This is a half-day leave
         </label>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div>
-          <label className="label">{isHalfDay ? 'Date' : 'Start Date'}</label>
+      {/* Dates Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="flex flex-col gap-1.5">
+          <label className="text-sm font-semibold text-primary dark:text-slate-300">
+            {isHalfDay ? 'Date' : 'Start Date'}
+          </label>
           <input
             type="date"
-            className="input text-sm sm:text-base px-3.5 sm:px-4 py-2.5 sm:py-3"
+            className="w-full h-[48px] bg-surface-container-lowest border border-outline-variant rounded-xl px-4 text-base text-on-surface focus:outline-none focus:border-2 focus:border-primary focus:ring-0 transition"
             {...register('startDate', { required: true })}
           />
         </div>
         {!isHalfDay ? (
-          <div>
-            <label className="label">End Date</label>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-semibold text-primary dark:text-slate-300">End Date</label>
             <input
               type="date"
-              className="input text-sm sm:text-base px-3.5 sm:px-4 py-2.5 sm:py-3"
+              className="w-full h-[48px] bg-surface-container-lowest border border-outline-variant rounded-xl px-4 text-base text-on-surface focus:outline-none focus:border-2 focus:border-primary focus:ring-0 transition"
               {...register('endDate', { required: true })}
             />
           </div>
         ) : (
-          <div>
-            <label className="label">Session</label>
-            <select className="input text-sm sm:text-base px-3.5 sm:px-4 py-2.5 sm:py-3" {...register('halfDaySession')}>
-              <option value="first_half">First Half (Morning)</option>
-              <option value="second_half">Second Half (Afternoon)</option>
-            </select>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-semibold text-primary dark:text-slate-300">Session</label>
+            <div className="relative">
+              <select
+                className="w-full h-[48px] appearance-none bg-surface-container-lowest border border-outline-variant rounded-xl px-4 text-base text-on-surface focus:outline-none focus:border-2 focus:border-primary focus:ring-0 transition"
+                {...register('halfDaySession')}
+              >
+                <option value="first_half">First Half (Morning)</option>
+                <option value="second_half">Second Half (Afternoon)</option>
+              </select>
+              <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-outline pointer-events-none">expand_more</span>
+            </div>
           </div>
         )}
       </div>
 
-      <div className="rounded-xl bg-gradient-to-r from-primary-50 to-accent-50 dark:from-primary-500/10 dark:to-accent-500/10 px-3.5 sm:px-4 py-3 sm:py-3.5 flex items-center justify-between gap-3">
-        <span className="text-xs sm:text-sm font-medium leading-tight text-slate-600 dark:text-slate-300">Total Requested Duration</span>
-        <span className="shrink-0 text-lg sm:text-xl font-bold text-primary-700 dark:text-primary-300">
-          {totalDays} {totalDays === 1 ? 'day' : 'days'}
-        </span>
+      {/* Duration Display */}
+      <div className="bg-surface-container-low rounded-xl p-4 flex items-center justify-between border border-surface-container-high">
+        <span className="text-sm font-semibold text-on-surface-variant">Total Requested Duration</span>
+        <div className="flex items-center gap-1.5">
+          <span className="text-xl font-bold text-primary dark:text-slate-200">{totalDays || '--'}</span>
+          <span className="text-sm font-semibold text-on-surface-variant">Days</span>
+        </div>
       </div>
 
-      <div>
-        <label className="label">Reason</label>
-        <div className="relative">
-          <FiFileText className="absolute left-3.5 top-3 text-slate-400" />
+      {/* Reason with Inline Attachment Trigger */}
+      <div className="flex flex-col gap-1.5">
+        <label className="text-sm font-semibold text-primary dark:text-slate-300">Reason</label>
+        <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl focus-within:border-2 focus-within:border-primary transition-all">
           <textarea
             rows={4}
             placeholder="Briefly describe the reason for your leave..."
-            className="input min-h-[7.5rem] text-sm sm:text-base pl-10 pr-3.5 sm:pr-4 pt-3"
+            className="w-full bg-transparent px-4 pt-3 pb-12 text-base text-on-surface outline-none border-none focus:ring-0 resize-none"
             {...register('reason', { required: 'Reason is required', maxLength: 1000 })}
           />
+          {/* File Input Wrapper inside Textarea */}
+          <label className="absolute bottom-2 right-2 text-on-surface-variant hover:text-primary transition-colors flex items-center justify-center p-2 rounded-full hover:bg-surface-container-low cursor-pointer">
+            <span className="material-symbols-outlined text-xl">attach_file</span>
+            <input
+              type="file"
+              hidden
+              accept=".jpg,.jpeg,.png,.pdf,.doc,.docx"
+              onChange={(e) => setFile(e.target.files?.[0] || null)}
+            />
+          </label>
         </div>
         {errors.reason && <p className="text-xs text-rose-500 mt-1">{errors.reason.message}</p>}
       </div>
 
-      <div>
-        <label className="label">Attachment (optional)</label>
-        <label className="flex items-center gap-3 input cursor-pointer text-sm sm:text-base px-3.5 sm:px-4 py-2.5 sm:py-3">
-          <FiUpload className="text-slate-400" />
-          <span className="text-sm text-slate-500 truncate">
-            {file ? file.name : 'Upload supporting document (jpg, pdf, doc)'}
-          </span>
-          <input
-            type="file"
-            hidden
-            accept=".jpg,.jpeg,.png,.pdf,.doc,.docx"
-            onChange={(e) => setFile(e.target.files?.[0] || null)}
-          />
-        </label>
-      </div>
+      {/* Attached File Indicator */}
+      {file && (
+        <div className="flex items-center justify-between text-xs text-on-surface-variant bg-surface-container-low px-4 py-2.5 rounded-xl border border-outline-variant/30">
+          <div className="flex items-center gap-2">
+            <span className="truncate max-w-[240px] font-semibold text-primary dark:text-slate-200">{file.name}</span>
+            <span className="text-[10px] text-on-surface-variant">({(file.size / 1024).toFixed(1)} KB)</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setFile(null)}
+            className="text-secondary hover:text-secondary-container transition-colors p-1"
+          >
+            <span className="material-symbols-outlined text-base">close</span>
+          </button>
+        </div>
+      )}
 
+      {/* Submit Button */}
       <button
         type="submit"
         disabled={isSubmitting || totalDays === 0}
-        className="btn-primary w-full py-2.5 sm:py-3 text-sm sm:text-base flex items-center justify-center gap-2"
+        className="w-full h-12 bg-primary text-on-primary rounded-xl font-semibold hover:bg-primary/90 transition-colors shadow-sm flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        <FiSend /> {isSubmitting ? 'Submitting…' : 'Submit Application'}
+        <span>{isSubmitting ? 'Submitting...' : 'Submit Application'}</span>
+        <span className="material-symbols-outlined text-[18px]">send</span>
       </button>
     </motion.form>
   );

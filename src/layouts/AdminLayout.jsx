@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
-import { FiHome, FiFileText, FiUsers, FiCalendar, FiLogOut, FiMoon, FiSun, FiMenu, FiX } from 'react-icons/fi';
+import { FiHome, FiFileText, FiUsers, FiCalendar, FiLogOut, FiMenu, FiX } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useState } from 'react';
@@ -46,9 +46,6 @@ export default function AdminLayout() {
           ))}
         </nav>
         <div className="p-4 border-t border-slate-100 dark:border-slate-800 space-y-2">
-          <button onClick={toggle} className="btn-outline w-full">
-            {theme === 'dark' ? <FiSun /> : <FiMoon />} Theme
-          </button>
           <button onClick={logout} className="btn-outline w-full">
             <FiLogOut /> Logout
           </button>
@@ -102,9 +99,6 @@ export default function AdminLayout() {
                 <h2 className="text-lg font-bold">{user?.name}</h2>
               </div>
             </div>
-            <button onClick={toggle} className="p-2.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800">
-              {theme === 'dark' ? <FiSun /> : <FiMoon />}
-            </button>
           </div>
         </header>
         <main className="flex-1 px-4 lg:px-8 py-5 max-w-7xl mx-auto w-full">

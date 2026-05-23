@@ -1,30 +1,57 @@
-import { useEffect, useState, useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { useEffect, useState, useMemo, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useSearchParams } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
 import MonthCalendar from '../components/MonthCalendar';
-import { getMyLeaves, getHolidays } from '../services/leaveService';
+import { getMyLeaves, getHolidays, cancelLeave } from '../services/leaveService';
 import LeaveCard from '../components/LeaveCard';
 import { ListSkeleton } from '../components/Skeleton';
 import EmptyState from '../components/EmptyState';
-import { leaveTypeLabel, statusColors } from '../utils/format';
+import Modal from '../components/Modal';
+import { leaveTypeLabel, statusColors, fmtDate } from '../utils/format';
+import { startOfDay as dateFnsStartOfDay, parseISO, differenceInDays } from 'date-fns';
 
-const startOfDay = (d) => {
-  const x = new Date(d);
-  x.setHours(0, 0, 0, 0);
-  return x;
+const parseDate = (d) => {
+  if (!d) return new Date();
+  if (d instanceof Date) return d;
+  return parseISO(d);
 };
 
-const daysBetween = (a, b) => Math.round((startOfDay(b) - startOfDay(a)) / 86_400_000);
+const startOfDay = (d) => dateFnsStartOfDay(parseDate(d));
+
+const daysBetween = (a, b) => differenceInDays(startOfDay(b), startOfDay(a));
+
+const statusOptions = ['all', 'pending', 'approved', 'rejected', 'cancelled'];
+
+const leaveTypeColors = {
+  sick: 'bg-rose-100 text-rose-800',
+  casual: 'bg-blue-100 text-blue-800',
+  personal: 'bg-indigo-100 text-indigo-800',
+  emergency: 'bg-amber-100 text-amber-800',
+  paid: 'bg-emerald-100 text-emerald-800',
+  unpaid: 'bg-slate-100 text-slate-800',
+};
 
 export default function CalendarPage() {
+  const [searchParams] = useSearchParams();
+  const historyRef = useRef(null);
+
   const [leaves, setLeaves] = useState([]);
   const [holidays, setHolidays] = useState([]);
   const [loading, setLoading] = useState(true);
   const [month, setMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [tab, setTab] = useState('upcoming');
+  
+  // History list states
+  const [historyTab, setHistoryTab] = useState('upcoming');
+  const [showFilters, setShowFilters] = useState(false);
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [search, setSearch] = useState('');
+  const [selectedLeave, setSelectedLeave] = useState(null);
 
-  useEffect(() => {
+  const loadData = () => {
+    setLoading(true);
     Promise.all([getMyLeaves({ limit: 100 }), getHolidays()])
       .then(([leavesData, holidaysData]) => {
         setLeaves(leavesData.items);
@@ -32,7 +59,30 @@ export default function CalendarPage() {
       })
       .catch(() => {})
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadData();
   }, []);
+
+  // Smooth scroll to history if targeted in URL query
+  useEffect(() => {
+    if (searchParams.get('tab') === 'history' && historyRef.current) {
+      setTimeout(() => {
+        historyRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 300);
+    }
+  }, [searchParams, loading]);
+
+  const onCancel = async (id) => {
+    if (!confirm('Cancel this leave request?')) return;
+    try {
+      await cancelLeave(id);
+      toast.success('Leave cancelled successfully');
+      setSelectedLeave(null);
+      loadData();
+    } catch {}
+  };
 
   const events = useMemo(() => {
     const holidayEvents = holidays.map((h) => ({
@@ -55,65 +105,31 @@ export default function CalendarPage() {
     return [...holidayEvents, ...leaveEvents];
   }, [holidays, leaves]);
 
-  const leaveByDate = useMemo(() => {
-    const map = new Map();
-    leaves.forEach((l) => {
-      if (l.status === 'cancelled') return;
-      const start = startOfDay(l.startDate);
-      const end = startOfDay(l.endDate);
-      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-        const key = d.toDateString();
-        if (!map.has(key)) map.set(key, []);
-        map.get(key).push(l);
-      }
+  const handleClickDay = (date) => {
+    setSelectedDate(date);
+  };
+
+  const { selectedLeaves, selectedHoliday } = useMemo(() => {
+    const dayKey = startOfDay(selectedDate);
+    const dayKeyMs = dayKey.getTime();
+
+    const leavesOnDay = leaves.filter((l) => {
+      if (l.status === 'cancelled') return false;
+      const s = startOfDay(l.startDate);
+      const en = startOfDay(l.endDate);
+      return s.getTime() <= dayKeyMs && dayKeyMs <= en.getTime();
     });
-    return map;
-  }, [leaves]);
 
-  const holidaysByDate = useMemo(() => {
-    const map = new Map();
-    holidays.forEach((h) => map.set(startOfDay(h.date).toDateString(), h));
-    return map;
-  }, [holidays]);
+    const holidayOnDay = holidays.find((h) => {
+      const d = startOfDay(h.date);
+      return d.getTime() === dayKeyMs;
+    });
 
-  const handleClickDay = (date) => setSelectedDate(date);
+    return { selectedLeaves: leavesOnDay, selectedHoliday: holidayOnDay };
+  }, [selectedDate, leaves, holidays]);
 
-  const selectedLeaves = leaveByDate.get(selectedDate.toDateString()) || [];
-  const selectedHoliday = holidaysByDate.get(selectedDate.toDateString());
-
-  const { upcomingItems, pastItems, stats } = useMemo(() => {
+  const stats = useMemo(() => {
     const today = startOfDay(new Date());
-    const items = [];
-
-    holidays.forEach((h) => {
-      items.push({
-        id: 'h-' + h._id,
-        kind: 'holiday',
-        title: h.name,
-        subtitle: h.description || 'Company Holiday',
-        date: startOfDay(h.date),
-      });
-    });
-
-    leaves.forEach((l) => {
-      if (l.status === 'cancelled') return;
-      const start = startOfDay(l.startDate);
-      const end = startOfDay(l.endDate);
-      const days = daysBetween(start, end) + 1;
-      items.push({
-        id: 'l-' + l._id,
-        kind: 'leave',
-        title: (leaveTypeLabel[l.leaveType] || 'Leave') + ' Leave',
-        subtitle: `${days} day${days > 1 ? 's' : ''} · ${l.reason || 'No reason provided'}`,
-        date: start,
-        end,
-        status: l.status,
-      });
-    });
-
-    const upcoming = items.filter((i) => i.date >= today).sort((a, b) => a.date - b.date);
-    const past = items.filter((i) => i.date < today).sort((a, b) => b.date - a.date);
-
     const year = today.getFullYear();
     const approvedDaysThisYear = leaves
       .filter((l) => l.status === 'approved' && new Date(l.startDate).getFullYear() === year)
@@ -121,136 +137,329 @@ export default function CalendarPage() {
     const pendingCount = leaves.filter((l) => l.status === 'pending').length;
     const upcomingHolidays = holidays.filter((h) => startOfDay(h.date) >= today).length;
 
-    return {
-      upcomingItems: upcoming,
-      pastItems: past,
-      stats: { approvedDaysThisYear, pendingCount, upcomingHolidays, year },
-    };
+    return { approvedDaysThisYear, pendingCount, upcomingHolidays, year };
   }, [leaves, holidays]);
 
-  const tabItems = tab === 'upcoming' ? upcomingItems : pastItems;
+  // History filtering
+  const filteredLeaves = useMemo(() => {
+    return leaves.filter((l) => {
+      const matchSearch =
+        l.reason?.toLowerCase().includes(search.toLowerCase()) ||
+        leaveTypeLabel[l.leaveType]?.toLowerCase().includes(search.toLowerCase());
+      const matchStatus =
+        statusFilter === 'all' || l.status === statusFilter;
+      return matchSearch && matchStatus;
+    });
+  }, [leaves, search, statusFilter]);
+
+  const processedHistory = useMemo(() => {
+    const today = startOfDay(new Date());
+    const upcoming = filteredLeaves.filter((l) => startOfDay(l.startDate) >= today);
+    const past = filteredLeaves.filter((l) => startOfDay(l.startDate) < today);
+
+    upcoming.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+    past.sort((a, b) => new Date(b.startDate) - new Date(a.startDate));
+
+    return { upcoming, past };
+  }, [filteredLeaves]);
+
+  const activeLeaves = historyTab === 'upcoming' ? processedHistory.upcoming : processedHistory.past;
 
   return (
-    <div className="space-y-5">
-      <PageHeader title="Leave Calendar" subtitle="Visualise all your leaves and official holidays" />
+    <div className="space-y-6 max-w-3xl mx-auto pb-16 overflow-hidden">
+      <PageHeader title="Leave Calendar" subtitle="Plan and track your time off" />
 
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-        <div className="card p-4">
-          <p className="text-xs text-slate-500 dark:text-slate-400">Leave days taken in {stats.year}</p>
-          <p className="text-2xl font-bold mt-1 text-slate-800 dark:text-slate-100">{stats.approvedDaysThisYear}</p>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="bg-surface-container-lowest dark:bg-slate-900 rounded-xl p-4 shadow-[0px_4px_20px_rgba(27,43,72,0.05)] border border-outline-variant/30">
+          <p className="text-xs text-on-surface-variant font-medium">Leave days taken in {stats.year}</p>
+          <p className="text-2xl font-bold mt-1 text-primary dark:text-slate-200">{stats.approvedDaysThisYear}</p>
         </div>
-        <div className="card p-4">
-          <p className="text-xs text-slate-500 dark:text-slate-400">Pending requests</p>
+        <div className="bg-surface-container-lowest dark:bg-slate-900 rounded-xl p-4 shadow-[0px_4px_20px_rgba(27,43,72,0.05)] border border-outline-variant/30">
+          <p className="text-xs text-on-surface-variant font-medium">Pending requests</p>
           <p className="text-2xl font-bold mt-1 text-amber-600 dark:text-amber-400">{stats.pendingCount}</p>
         </div>
-        <div className="card p-4 col-span-2 md:col-span-1">
-          <p className="text-xs text-slate-500 dark:text-slate-400">Upcoming holidays</p>
+        <div className="bg-surface-container-lowest dark:bg-slate-900 rounded-xl p-4 shadow-[0px_4px_20px_rgba(27,43,72,0.05)] border border-outline-variant/30">
+          <p className="text-xs text-on-surface-variant font-medium">Upcoming holidays</p>
           <p className="text-2xl font-bold mt-1 text-indigo-600 dark:text-indigo-400">{stats.upcomingHolidays}</p>
         </div>
       </div>
 
-      <motion.div initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="card p-4">
+      {/* Calendar Card */}
+      <motion.div
+        initial={{ y: 10, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        className="bg-surface-container-lowest dark:bg-slate-900 rounded-xl shadow-[0px_4px_20px_rgba(27,43,72,0.05)] p-4 border border-outline-variant/30 overflow-hidden"
+      >
         <MonthCalendar
           events={events}
           month={month}
           onChangeMonth={setMonth}
           onClickDay={handleClickDay}
+          selectedDate={selectedDate}
         />
       </motion.div>
 
-      <div className="grid md:grid-cols-2 gap-5">
-        <div>
-          <h3 className="font-semibold mb-3">
-            Events on {selectedDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
-          </h3>
-          {selectedHoliday && (
-            <div className="bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/50 p-4 rounded-2xl flex items-start gap-3.5 mb-3 text-indigo-900 dark:text-indigo-200">
-              <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900 grid place-items-center text-indigo-600 dark:text-indigo-400 font-bold shrink-0">
-                H
-              </div>
-              <div>
-                <h4 className="font-bold text-base">{selectedHoliday.name}</h4>
-                <p className="text-sm text-indigo-700/80 dark:text-indigo-300/80 mt-0.5">{selectedHoliday.description || 'Official Company Holiday'}</p>
-              </div>
-            </div>
-          )}
-          {loading ? (
-            <ListSkeleton count={2} />
-          ) : selectedLeaves.length === 0 && !selectedHoliday ? (
-            <EmptyState title="No leaves or holidays on this day" />
-          ) : (
-            <div className="space-y-3">
-              {selectedLeaves.map((l) => <LeaveCard key={l._id} leave={l} />)}
-            </div>
-          )}
+      {/* Legend */}
+      <div className="flex flex-wrap gap-4 px-2">
+        <div className="flex items-center gap-1.5">
+          <div className="w-3 h-3 rounded-full bg-primary"></div>
+          <span className="text-xs font-semibold text-on-surface-variant">Personal Leave</span>
         </div>
-
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold">Leave History &amp; Holidays</h3>
-            <div className="inline-flex rounded-lg border border-slate-200 dark:border-slate-700 p-0.5 text-xs">
-              <button
-                type="button"
-                onClick={() => setTab('upcoming')}
-                className={[
-                  'px-3 py-1.5 rounded-md font-medium transition',
-                  tab === 'upcoming'
-                    ? 'bg-primary-600 text-white'
-                    : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800',
-                ].join(' ')}
-              >
-                Upcoming ({upcomingItems.length})
-              </button>
-              <button
-                type="button"
-                onClick={() => setTab('past')}
-                className={[
-                  'px-3 py-1.5 rounded-md font-medium transition',
-                  tab === 'past'
-                    ? 'bg-primary-600 text-white'
-                    : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800',
-                ].join(' ')}
-              >
-                Past ({pastItems.length})
-              </button>
-            </div>
-          </div>
-          <div className="card p-4 space-y-2 max-h-[350px] overflow-y-auto">
-            {tabItems.length === 0 ? (
-              <p className="text-sm text-slate-500 text-center py-4">
-                {tab === 'upcoming' ? 'Nothing on the horizon.' : 'No past leaves or holidays yet.'}
-              </p>
-            ) : (
-              tabItems.map((item) => (
-                <div key={item.id} className="flex justify-between items-start gap-3 py-2.5 border-b last:border-b-0 border-slate-100 dark:border-slate-800">
-                  <div className="flex items-start gap-3 min-w-0">
-                    <div className={[
-                      'w-9 h-9 rounded-lg grid place-items-center text-xs font-bold shrink-0',
-                      item.kind === 'holiday'
-                        ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-300'
-                        : 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-300',
-                    ].join(' ')}>
-                      {item.kind === 'holiday' ? 'H' : 'L'}
-                    </div>
-                    <div className="min-w-0">
-                      <h4 className="font-semibold text-sm text-slate-800 dark:text-slate-200 truncate">{item.title}</h4>
-                      <p className="text-xs text-slate-500 truncate">{item.subtitle}</p>
-                      {item.kind === 'leave' && (
-                        <span className={['inline-block mt-1 text-[10px] font-semibold px-2 py-0.5 rounded-full', statusColors[item.status]].join(' ')}>
-                          {item.status}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <span className="text-xs font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2.5 py-1.5 rounded-lg shrink-0">
-                    {item.date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
-                  </span>
-                </div>
-              ))
-            )}
-          </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-3 h-3 rounded-sm bg-error-container border border-error/20"></div>
+          <span className="text-xs font-semibold text-on-surface-variant">Public Holiday</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-3 h-3 rounded-full border border-outline-variant bg-surface-container-lowest"></div>
+          <span className="text-xs font-semibold text-on-surface-variant">Working Day</span>
         </div>
       </div>
+
+      {/* Selected Date Events */}
+      <div className="bg-surface-container-lowest dark:bg-slate-900 rounded-xl shadow-[0px_4px_20px_rgba(27,43,72,0.05)] p-4 border border-outline-variant/30 space-y-3">
+        <h3 className="font-bold text-headline-sm text-primary dark:text-slate-200">
+          Events on {selectedDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+        </h3>
+        
+        {selectedHoliday && (
+          <div className="bg-error-container text-on-error-container p-4 rounded-xl flex items-start gap-3 border border-error/10">
+            <div className="w-10 h-10 rounded-full bg-error text-on-error flex items-center justify-center shrink-0">
+              <span className="material-symbols-outlined text-lg">celebration</span>
+            </div>
+            <div>
+              <h4 className="font-bold text-base">{selectedHoliday.name}</h4>
+              <p className="text-xs text-on-error-container/85 mt-0.5">{selectedHoliday.description || 'Official Company Holiday'}</p>
+            </div>
+          </div>
+        )}
+
+        {selectedLeaves.length > 0 && (
+          <div className="space-y-3">
+            {selectedLeaves.map((l) => (
+              <div key={l._id} className="bg-surface-container-low border border-outline-variant/20 p-4 rounded-xl flex items-start gap-3">
+                <div className="w-10 h-10 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center shrink-0">
+                  <span className="material-symbols-outlined text-lg">flight_takeoff</span>
+                </div>
+                <div className="flex-grow min-w-0">
+                  <div className="flex justify-between items-start gap-2 mb-1">
+                    <h4 className="font-bold text-sm text-on-surface truncate">
+                      {leaveTypeLabel[l.leaveType]}
+                    </h4>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider ${statusColors[l.status]}`}>
+                      {l.status}
+                    </span>
+                  </div>
+                  <p className="text-xs text-on-surface-variant font-medium">
+                    {l.isHalfDay ? 'Half Day' : 'Full Day'} • {fmtDate(l.startDate, 'dd MMM')} - {fmtDate(l.endDate, 'dd MMM')}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {selectedLeaves.length === 0 && !selectedHoliday && (
+          <p className="text-sm text-on-surface-variant italic text-center py-4">No leaves or holidays scheduled for this date.</p>
+        )}
+      </div>
+
+      {/* LEAVE HISTORY SECTION */}
+      <div ref={historyRef} className="pt-6 border-t border-outline-variant/30 space-y-4">
+        {/* Header & Controls */}
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="font-bold text-headline-sm text-primary dark:text-slate-200">Leave History</h2>
+            <p className="text-xs text-on-surface-variant">Review your upcoming and past leave requests.</p>
+          </div>
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`h-10 px-4 rounded-lg border border-outline-variant flex items-center gap-1 hover:bg-surface-container-low transition-colors font-semibold text-xs text-on-surface ${
+              showFilters ? 'bg-surface-container-low border-primary/45' : ''
+            }`}
+          >
+            <span className="material-symbols-outlined text-base">filter_list</span>
+            Filter
+          </button>
+        </div>
+
+        {/* Filter Panel */}
+        <AnimatePresence>
+          {showFilters && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden bg-surface-container-low rounded-xl border border-outline-variant/35 shadow-sm"
+            >
+              <div className="p-4 space-y-4">
+                <div className="relative">
+                  <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">search</span>
+                  <input
+                    placeholder="Search by reason or leave type..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="w-full h-10 pl-10 pr-4 bg-surface-container-lowest border border-outline-variant rounded-xl text-sm focus:outline-none focus:border-2 focus:border-primary focus:ring-0 transition placeholder:text-slate-400"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-primary dark:text-slate-300">Status Filter</label>
+                  <div className="flex gap-2 overflow-x-auto pb-1">
+                    {statusOptions.map((s) => (
+                      <button
+                        key={s}
+                        onClick={() => setStatusFilter(s)}
+                        className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold capitalize transition ${
+                          statusFilter === s
+                            ? 'bg-primary text-on-primary shadow-sm'
+                            : 'bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container-high'
+                        }`}
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Tabs */}
+        <div className="flex p-1 bg-surface-container-low rounded-xl">
+          <button
+            onClick={() => setHistoryTab('upcoming')}
+            className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${
+              historyTab === 'upcoming'
+                ? 'bg-white dark:bg-slate-900 text-primary dark:text-slate-200 shadow-sm'
+                : 'text-on-surface-variant hover:text-on-surface'
+            }`}
+          >
+            Upcoming
+          </button>
+          <button
+            onClick={() => setHistoryTab('past')}
+            className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${
+              historyTab === 'past'
+                ? 'bg-white dark:bg-slate-900 text-primary dark:text-slate-200 shadow-sm'
+                : 'text-on-surface-variant hover:text-on-surface'
+            }`}
+          >
+            Past
+          </button>
+        </div>
+
+        {/* History Leaves List */}
+        {loading ? (
+          <ListSkeleton count={2} />
+        ) : activeLeaves.length === 0 ? (
+          <EmptyState title="No leaves found" subtitle="Try adjusting your filters or tab criteria" />
+        ) : (
+          <div className="space-y-4">
+            {activeLeaves.map((l) => (
+              <LeaveCard
+                key={l._id}
+                leave={l}
+                onClick={() => setSelectedLeave(l)}
+                onCancel={onCancel}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Details Modal */}
+      <Modal
+        open={!!selectedLeave}
+        onClose={() => setSelectedLeave(null)}
+        title="Leave Details"
+        footer={
+          selectedLeave?.status === 'pending' && (
+            <button
+              onClick={() => onCancel(selectedLeave._id)}
+              className="bg-secondary text-on-secondary font-semibold h-11 px-5 rounded-lg hover:bg-secondary/90 flex items-center justify-center gap-1.5 transition-colors shadow-sm w-full"
+            >
+              <span className="material-symbols-outlined text-base">close</span> Cancel Leave
+            </button>
+          )
+        }
+      >
+        {selectedLeave && (
+          <div className="space-y-4 text-sm font-medium">
+            <div className="flex flex-wrap gap-2 pt-1">
+              <span className={`chip ${leaveTypeColors[selectedLeave.leaveType] || ''}`}>
+                {leaveTypeLabel[selectedLeave.leaveType]}
+              </span>
+              <span className={`chip uppercase font-semibold tracking-wider ${statusColors[selectedLeave.status] || ''}`}>
+                {selectedLeave.status}
+              </span>
+            </div>
+            
+            <div className="divide-y divide-outline-variant/20 border-t border-b border-outline-variant/20 py-1">
+              <div className="flex justify-between py-2.5">
+                <span className="text-on-surface-variant font-medium">Start Date</span>
+                <span className="font-semibold text-primary dark:text-slate-300">{fmtDate(selectedLeave.startDate, 'dd MMM yyyy')}</span>
+              </div>
+              {selectedLeave.isHalfDay ? (
+                <div className="flex justify-between py-2.5">
+                  <span className="text-on-surface-variant font-medium">Session</span>
+                  <span className="font-semibold text-primary dark:text-slate-300">
+                    {selectedLeave.halfDaySession === 'first_half' ? 'First Half (Morning)' : 'Second Half (Afternoon)'}
+                  </span>
+                </div>
+              ) : (
+                <div className="flex justify-between py-2.5">
+                  <span className="text-on-surface-variant font-medium">End Date</span>
+                  <span className="font-semibold text-primary dark:text-slate-300">{fmtDate(selectedLeave.endDate, 'dd MMM yyyy')}</span>
+                </div>
+              )}
+              <div className="flex justify-between py-2.5">
+                <span className="text-on-surface-variant font-medium">Total Days</span>
+                <span className="font-semibold text-primary dark:text-slate-300">{selectedLeave.totalDays} Day(s)</span>
+              </div>
+              <div className="flex justify-between py-2.5">
+                <span className="text-on-surface-variant font-medium">Applied On</span>
+                <span className="font-semibold text-primary dark:text-slate-300">{fmtDate(selectedLeave.createdAt, 'dd MMM yyyy, p')}</span>
+              </div>
+              {selectedLeave.actionedAt && (
+                <div className="flex justify-between py-2.5">
+                  <span className="text-on-surface-variant font-medium">Actioned On</span>
+                  <span className="font-semibold text-primary dark:text-slate-300">{fmtDate(selectedLeave.actionedAt, 'dd MMM yyyy, p')}</span>
+                </div>
+              )}
+            </div>
+
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-on-surface-variant flex items-center gap-1">
+                <span className="material-symbols-outlined text-base">info</span> Reason
+              </p>
+              <p className="mt-1 text-on-surface bg-surface-container-low p-3.5 rounded-xl border border-outline-variant/10 text-body-md font-normal leading-relaxed">
+                {selectedLeave.reason || 'No description provided.'}
+              </p>
+            </div>
+
+            {selectedLeave.adminComment && (
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Manager's Comment</p>
+                <p className="mt-1 text-on-surface bg-[#fffbeb] dark:bg-amber-950/20 p-3.5 rounded-xl border border-amber-200/50 dark:border-amber-900/50 text-body-md font-normal leading-relaxed">
+                  {selectedLeave.adminComment}
+                </p>
+              </div>
+            )}
+            
+            {selectedLeave.attachment && (
+              <a
+                href={selectedLeave.attachment}
+                target="_blank"
+                rel="noreferrer"
+                className="w-full h-11 border border-outline-variant text-primary hover:bg-surface-container-low font-semibold rounded-lg flex items-center justify-center gap-1.5 transition-colors mt-2"
+              >
+                View Attachment
+              </a>
+            )}
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }
