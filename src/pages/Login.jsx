@@ -88,7 +88,7 @@ export default function Login() {
           <div className="text-center text-xs text-slate-500 mt-6 space-y-1 bg-slate-100 dark:bg-slate-900 p-3 rounded-lg">
             <p className="font-semibold text-slate-600 dark:text-slate-400">Demo Logins:</p>
             <p>Admin: <b>charan.f.sde@gmail.com</b> / <b>admin123</b></p>
-            <p>Employee: <b>EMP001</b> / <b>employee123</b></p>
+            <p>Employee: <b>&lt;Card No&gt;</b> / <b>Password@123</b> (e.g. H1)</p>
           </div>
         </motion.div>
       </div>

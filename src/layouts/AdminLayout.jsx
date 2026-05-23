@@ -3,6 +3,7 @@ import { FiHome, FiFileText, FiUsers, FiCalendar, FiLogOut, FiMoon, FiSun, FiMen
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useState } from 'react';
+import EmailSetupModal from '../components/EmailSetupModal';
 
 const items = [
   { to: '/admin', icon: FiHome, label: 'Dashboard', end: true },
@@ -116,6 +117,7 @@ export default function AdminLayout() {
           <Outlet />
         </main>
       </div>
+      <EmailSetupModal />
     </div>
   );
 }
