@@ -33,7 +33,7 @@ export default function AdminEmployees() {
       <PageHeader title="Employees" subtitle={`${data.total ?? data.items.length} total`} />
 
       <form onSubmit={submit} className="card p-3 relative">
-        <FiSearch className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400" />
+        <FiSearch className="absolute left-6 top-1/2 -translate-y-1/2 text-on-surface-variant/50" />
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -55,13 +55,13 @@ export default function AdminEmployees() {
               className="card p-4 flex items-center justify-between gap-3 hover:shadow-card transition cursor-pointer"
             >
               <div className="flex items-center gap-3 min-w-0 flex-1">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary-500 to-accent-500 text-white grid place-items-center font-semibold shrink-0">
+                <div className="w-12 h-12 rounded-full bg-primary-container text-on-primary-container border border-outline-variant/50 grid place-items-center font-semibold shrink-0">
                   {e.name?.[0]}
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold truncate">{e.name}</p>
-                  <p className="text-xs text-slate-500 truncate">{e.employeeId} · {e.department}</p>
-                  <p className="text-xs text-slate-400 truncate inline-flex items-center gap-1 mt-1">
+                  <p className="text-xs text-on-surface-variant truncate">{e.employeeId} · {e.department}</p>
+                  <p className="text-xs text-on-surface-variant/75 truncate inline-flex items-center gap-1 mt-1">
                     <FiMail className="shrink-0" /> {e.email}
                   </p>
                 </div>
@@ -71,7 +71,7 @@ export default function AdminEmployees() {
                   ev.stopPropagation();
                   setSelectedEmployee(e);
                 }}
-                className="btn btn-outline text-xs px-2.5 py-1.5 shrink-0 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-950/20 dark:hover:text-indigo-400 border-slate-200 dark:border-slate-800 transition"
+                className="btn-outline text-xs px-2.5 py-1.5 shrink-0"
               >
                 Apply Leave
               </button>

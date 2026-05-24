@@ -20,10 +20,10 @@ export default function AdminLayout() {
   const { pathname } = useLocation();
 
   return (
-    <div className="min-h-screen flex bg-slate-50 dark:bg-slate-950">
+    <div className="min-h-screen flex bg-background">
       {/* Sidebar - desktop */}
-      <aside className="hidden lg:flex flex-col w-64 shrink-0 h-screen sticky top-0 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-        <div className="p-6 border-b border-slate-100 dark:border-slate-800">
+      <aside className="hidden lg:flex flex-col w-64 shrink-0 h-screen sticky top-0 border-r border-outline-variant/60 bg-surface-container-lowest">
+        <div className="p-6 border-b border-outline-variant/30">
           <BrandLogo subtitle="Admin Console" />
         </div>
         <nav className="flex-1 p-4 space-y-1">
@@ -33,10 +33,10 @@ export default function AdminLayout() {
               to={to}
               end={end}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition ${
+                `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition ${
                   isActive
-                    ? 'bg-gradient-to-r from-primary-500 to-accent-500 text-white shadow-card'
-                    : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                    ? 'bg-primary text-on-primary shadow-sm'
+                    : 'text-on-surface-variant hover:bg-surface-container-low'
                 }`
               }
             >
@@ -45,7 +45,7 @@ export default function AdminLayout() {
             </NavLink>
           ))}
         </nav>
-        <div className="p-4 border-t border-slate-100 dark:border-slate-800 space-y-2">
+        <div className="p-4 border-t border-outline-variant/30 space-y-2">
           <button onClick={logout} className="btn-outline w-full">
             <FiLogOut /> Logout
           </button>
@@ -55,9 +55,9 @@ export default function AdminLayout() {
       {/* Mobile drawer */}
       {open && (
         <div className="lg:hidden fixed inset-0 z-40">
-          <div className="absolute inset-0 bg-slate-900/50" onClick={() => setOpen(false)} />
-          <aside className="absolute left-0 top-0 bottom-0 w-72 bg-white dark:bg-slate-900 p-4 flex flex-col">
-            <button onClick={() => setOpen(false)} className="self-end p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800">
+          <div className="absolute inset-0 bg-[#0b1c30]/40 backdrop-blur-sm" onClick={() => setOpen(false)} />
+          <aside className="absolute left-0 top-0 bottom-0 w-72 bg-surface-container-lowest p-4 flex flex-col border-r border-outline-variant/60">
+            <button onClick={() => setOpen(false)} className="self-end p-2 rounded-full hover:bg-surface-container-low text-primary">
               <FiX />
             </button>
             <BrandLogo subtitle="Admin Console" className="mt-2 mb-4" />
@@ -69,10 +69,10 @@ export default function AdminLayout() {
                   end={end}
                   onClick={() => setOpen(false)}
                   className={({ isActive }) =>
-                    `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium ${
+                    `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold ${
                       isActive
-                        ? 'bg-gradient-to-r from-primary-500 to-accent-500 text-white'
-                        : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                        ? 'bg-primary text-on-primary'
+                        : 'text-on-surface-variant hover:bg-surface-container-low'
                     }`
                   }
                 >
@@ -88,14 +88,14 @@ export default function AdminLayout() {
       )}
 
       <div className="flex-1 min-w-0 flex flex-col">
-        <header className="sticky top-0 z-20 glass border-b border-slate-200 dark:border-slate-800">
+        <header className="sticky top-0 z-20 bg-surface border-b border-outline-variant/60">
           <div className="flex items-center justify-between px-4 lg:px-8 py-3">
             <div className="flex items-center gap-3">
-              <button onClick={() => setOpen(true)} className="lg:hidden p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800">
+              <button onClick={() => setOpen(true)} className="lg:hidden p-2 rounded-full hover:bg-surface-container-low text-primary">
                 <FiMenu />
               </button>
               <div>
-                <p className="text-xs text-slate-500">Admin</p>
+                <p className="text-xs text-on-surface-variant/75 font-medium">Admin</p>
                 <h2 className="text-lg font-bold">{user?.name}</h2>
               </div>
             </div>

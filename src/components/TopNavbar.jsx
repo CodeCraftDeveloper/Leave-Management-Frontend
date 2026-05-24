@@ -13,8 +13,8 @@ export default function TopNavbar() {
   }, [pathname]);
 
   return (
-    <header className="sticky top-0 z-20 bg-surface border-b border-outline-variant/60 h-16 flex items-center justify-between px-margin-mobile w-full">
-      <div className="flex items-center gap-sm">
+    <header className="sticky top-0 z-20 bg-surface border-b border-outline-variant/60 h-16 flex items-center justify-between px-4 w-full">
+      <div className="flex items-center gap-3">
         {/* Profile Avatar / Initials linking to Profile */}
         <Link
           to="/profile"
@@ -31,7 +31,7 @@ export default function TopNavbar() {
         </span>
       </div>
 
-      <div className="flex items-center gap-xs">
+      <div className="flex items-center gap-1">
         {/* Notifications Icon with Unread Badge */}
         <Link
           to="/notifications"

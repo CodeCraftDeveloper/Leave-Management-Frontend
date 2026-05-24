@@ -14,7 +14,7 @@ const statusColors = {
   approved: 'bg-[#dcfce7] text-[#166534]',
   pending: 'bg-surface-container-high text-[#92400e] border border-outline-variant/30',
   rejected: 'bg-rose-100 text-rose-800',
-  cancelled: 'bg-slate-100 text-slate-600',
+  cancelled: 'bg-surface-container-high text-on-surface-variant border border-outline-variant/30',
 };
 
 const statusOptions = ['all', 'pending', 'approved', 'rejected', 'cancelled'];
@@ -105,7 +105,7 @@ export default function LeaveHistory() {
           >
             <div className="p-4 space-y-4">
               <div className="relative">
-                <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-on-surface-variant/50" />
                 <input
                   placeholder="Search by reason or leave type..."
                   value={search}

@@ -15,8 +15,8 @@ const items = [
 export default function Sidebar() {
   const { user, logout } = useAuth();
   return (
-    <aside className="hidden lg:flex flex-col w-64 shrink-0 h-screen sticky top-0 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-      <div className="p-6 border-b border-slate-100 dark:border-slate-800">
+    <aside className="hidden lg:flex flex-col w-64 shrink-0 h-screen sticky top-0 border-r border-outline-variant/60 bg-surface-container-lowest">
+      <div className="p-6 border-b border-outline-variant/30">
         <BrandLogo subtitle="Employee Portal" />
       </div>
       <nav className="flex-1 p-4 space-y-1">
@@ -26,10 +26,10 @@ export default function Sidebar() {
             to={to}
             end={end}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition ${
+              `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition ${
                 isActive
-                  ? 'bg-gradient-to-r from-primary-500 to-accent-500 text-white shadow-card'
-                  : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  ? 'bg-primary text-on-primary shadow-sm'
+                  : 'text-on-surface-variant hover:bg-surface-container-low'
               }`
             }
           >
@@ -38,14 +38,14 @@ export default function Sidebar() {
           </NavLink>
         ))}
       </nav>
-      <div className="p-4 border-t border-slate-100 dark:border-slate-800">
+      <div className="p-4 border-t border-outline-variant/30">
         <div className="flex items-center gap-3 mb-3">
-          <div className="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-500/20 text-primary-600 dark:text-primary-300 grid place-items-center font-semibold">
+          <div className="w-10 h-10 rounded-full bg-primary-container text-on-primary-container grid place-items-center font-semibold border border-outline-variant/65">
             {user?.name?.[0]}
           </div>
           <div className="min-w-0">
             <p className="text-sm font-semibold truncate">{user?.name}</p>
-            <p className="text-xs text-slate-500 truncate">{user?.employeeId}</p>
+            <p className="text-xs text-on-surface-variant/75 truncate">{user?.employeeId}</p>
           </div>
         </div>
         <button onClick={logout} className="btn-outline w-full">

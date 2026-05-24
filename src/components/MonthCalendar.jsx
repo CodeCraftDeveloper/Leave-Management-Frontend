@@ -174,7 +174,7 @@ export default function MonthCalendar({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.15, delay: wi * 0.02 }}
-              className="relative grid grid-cols-7 border-b border-slate-100 dark:border-slate-800 last:border-b-0 min-h-[5rem] sm:min-h-[7rem]"
+              className="relative grid grid-cols-7 border-b border-slate-100 dark:border-slate-800 last:border-b-0 min-h-[3.5rem] sm:min-h-[4.5rem]"
             >
               {week.map((day, di) => {
                 const inMonth = isSameMonth(day, month);
@@ -189,7 +189,7 @@ export default function MonthCalendar({
                     onClick={() => handleCellClick(day)}
                     disabled={disabled}
                     className={[
-                      'relative text-left p-1 sm:p-2 border-r border-slate-100 dark:border-slate-800 last:border-r-0 min-w-0 overflow-hidden',
+                      'relative text-left p-1 sm:p-1.5 border-r border-slate-100 dark:border-slate-800 last:border-r-0 min-w-0 overflow-hidden',
                       'transition',
                       disabled
                         ? 'opacity-60 cursor-not-allowed'
@@ -216,7 +216,7 @@ export default function MonthCalendar({
                 );
               })}
 
-              <div className="absolute inset-x-0 top-9 sm:top-10 pointer-events-none">
+              <div className="absolute inset-x-0 top-8 sm:top-9 pointer-events-none">
                 {placed.map(({ event, startCol, endCol, lane }) => (
                   <button
                     type="button"

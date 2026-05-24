@@ -6,7 +6,7 @@ import EmailSetupModal from '../components/EmailSetupModal';
 
 export default function MainLayout() {
   return (
-    <div className="min-h-screen flex bg-slate-50 dark:bg-slate-950">
+    <div className="min-h-screen flex bg-background">
       <Sidebar />
       <div className="flex-1 min-w-0 flex flex-col">
         <TopNavbar />

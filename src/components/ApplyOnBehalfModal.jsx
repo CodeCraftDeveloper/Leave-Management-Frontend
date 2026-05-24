@@ -110,21 +110,21 @@ export default function ApplyOnBehalfModal({ open, onClose, employee, onSuccess 
             </select>
           </div>
           <div className="flex flex-col justify-end">
-            <div className="rounded-xl border border-slate-200 dark:border-slate-800 px-3 py-2 flex items-center justify-between bg-slate-50 dark:bg-slate-900/50">
-              <span className="text-xs text-slate-500">Balance:</span>
-              <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{balance} days</span>
+            <div className="rounded-xl border border-outline-variant/30 px-3 py-2 flex items-center justify-between bg-surface-container-low">
+              <span className="text-xs text-on-surface-variant">Balance:</span>
+              <span className="text-sm font-bold text-primary">{balance} days</span>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-900/30 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800">
+        <div className="flex items-center gap-3 bg-surface-container-low p-2.5 rounded-xl border border-outline-variant/30">
           <input
             id="isHalfDayBehalf"
             type="checkbox"
-            className="w-4 h-4 rounded text-primary-600 focus:ring-primary-500 border-slate-300 dark:border-slate-700"
+            className="w-4 h-4 rounded text-primary focus:ring-primary border-outline-variant"
             {...register('isHalfDay')}
           />
-          <label htmlFor="isHalfDayBehalf" className="text-xs font-medium text-slate-700 dark:text-slate-200 cursor-pointer select-none">
+          <label htmlFor="isHalfDayBehalf" className="text-xs font-medium text-on-surface-variant cursor-pointer select-none">
             This is a half-day leave
           </label>
         </div>
@@ -133,16 +133,16 @@ export default function ApplyOnBehalfModal({ open, onClose, employee, onSuccess 
           <div>
             <label className="label text-xs">{isHalfDay ? 'Date' : 'Start Date'}</label>
             <div className="relative">
-              <FiCalendar className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none w-3.5 h-3.5" />
-              <input type="date" className="input text-sm pl-8 py-2 px-3" {...register('startDate', { required: true })} />
+              <FiCalendar className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/50 pointer-events-none w-3.5 h-3.5" />
+              <input type="date" onClick={(e) => e.target.showPicker?.()} className="input text-sm pl-8 py-2 px-3" {...register('startDate', { required: true })} />
             </div>
           </div>
           {!isHalfDay ? (
             <div>
               <label className="label text-xs">End Date</label>
               <div className="relative">
-                <FiCalendar className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none w-3.5 h-3.5" />
-                <input type="date" className="input text-sm pl-8 py-2 px-3" {...register('endDate', { required: true })} />
+                <FiCalendar className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/50 pointer-events-none w-3.5 h-3.5" />
+                <input type="date" onClick={(e) => e.target.showPicker?.()} className="input text-sm pl-8 py-2 px-3" {...register('endDate', { required: true })} />
               </div>
             </div>
           ) : (
@@ -168,9 +168,9 @@ export default function ApplyOnBehalfModal({ open, onClose, employee, onSuccess 
           </div>
         )}
 
-        <div className="rounded-xl bg-gradient-to-r from-primary-50 to-accent-50 dark:from-primary-500/10 dark:to-accent-500/10 px-3 py-2.5 flex items-center justify-between">
-          <span className="text-xs font-medium text-slate-600 dark:text-slate-300">Total Duration</span>
-          <span className="text-base font-bold text-primary-700 dark:text-primary-300">
+        <div className="rounded-xl bg-surface-container-low border border-outline-variant/30 px-3 py-2.5 flex items-center justify-between">
+          <span className="text-xs font-medium text-on-surface-variant">Total Duration</span>
+          <span className="text-base font-bold text-primary">
             {totalDays} {totalDays === 1 ? 'day' : 'days'}
           </span>
         </div>
@@ -178,7 +178,7 @@ export default function ApplyOnBehalfModal({ open, onClose, employee, onSuccess 
         <div>
           <label className="label text-xs">Reason</label>
           <div className="relative">
-            <FiFileText className="absolute left-3 top-3 text-slate-400 w-3.5 h-3.5" />
+            <FiFileText className="absolute left-3 top-3 text-on-surface-variant/50 w-3.5 h-3.5" />
             <textarea
               rows={3}
               placeholder="Reason for logging leave..."

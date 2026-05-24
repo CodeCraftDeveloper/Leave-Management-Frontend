@@ -276,6 +276,7 @@ export default function AdminCalendar() {
             <label className="label">Date</label>
             <input
               type="date"
+              onClick={(e) => e.target.showPicker?.()}
               value={form.date}
               onChange={(e) => setForm({ ...form, date: e.target.value })}
               className="input"

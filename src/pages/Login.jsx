@@ -26,10 +26,10 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen grid lg:grid-cols-2 bg-slate-50 dark:bg-slate-950">
-      <div className="hidden lg:flex relative items-center justify-center p-12 bg-gradient-to-br from-primary-600 via-primary-700 to-accent-600 text-white overflow-hidden">
+    <div className="min-h-screen grid lg:grid-cols-2 bg-background">
+      <div className="hidden lg:flex relative items-center justify-center p-12 bg-gradient-to-br from-primary via-primary-container to-tertiary text-white overflow-hidden">
         <div className="absolute -top-20 -left-20 w-80 h-80 rounded-full bg-white/10 blur-3xl" />
-        <div className="absolute bottom-0 right-0 w-96 h-96 rounded-full bg-accent-400/30 blur-3xl" />
+        <div className="absolute bottom-0 right-0 w-96 h-96 rounded-full bg-primary-container/20 blur-3xl" />
         <div className="relative max-w-md">
           <BrandLogo size="full" subtitle="" textClassName="text-white" className="mb-6" />
           <h1 className="text-4xl font-bold leading-tight">Prem Industries Leave Portal</h1>
@@ -45,16 +45,16 @@ export default function Login() {
         >
           <div className="mb-8 text-center">
             <BrandLogo size="full" showText={false} className="justify-center mb-4" />
-            <h1 className="text-sm font-semibold text-primary-600 dark:text-primary-300 mb-2">Prem Industries</h1>
+            <h1 className="text-sm font-semibold text-primary mb-2">Prem Industries</h1>
             <h2 className="text-2xl font-bold">Welcome back</h2>
-            <p className="text-sm text-slate-500 mt-1">Sign in to continue to your portal</p>
+            <p className="text-sm text-on-surface-variant mt-1">Sign in to continue to your portal</p>
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="card p-6 space-y-4">
             <div>
               <label className="label">Employee ID or Email</label>
               <div className="relative">
-                <FiUser className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <FiUser className="absolute left-3.5 top-1/2 -translate-y-1/2 text-on-surface-variant/50" />
                 <input
                   type="text"
                   placeholder="EMP001 or admin@example.com"
@@ -67,14 +67,14 @@ export default function Login() {
             <div>
               <label className="label">Password</label>
               <div className="relative">
-                <FiLock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <FiLock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-on-surface-variant/50" />
                 <input
                   type={show ? 'text' : 'password'}
                   placeholder="••••••••"
                   className="input pl-10 pr-10"
                   {...register('password', { required: 'Password is required' })}
                 />
-                <button type="button" onClick={() => setShow((s) => !s)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 p-1">
+                <button type="button" onClick={() => setShow((s) => !s)} className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant/50 p-1">
                   {show ? <FiEyeOff /> : <FiEye />}
                 </button>
               </div>

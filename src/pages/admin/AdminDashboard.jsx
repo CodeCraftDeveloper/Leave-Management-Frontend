@@ -44,13 +44,13 @@ export default function AdminDashboard() {
               const pct = (v) => (v / max) * 100;
               return (
                 <div key={i} className="flex flex-col items-center gap-2 flex-1 min-w-[28px]">
-                  <div className="flex flex-col-reverse w-full max-w-[36px] h-40 rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-800">
+                  <div className="flex flex-col-reverse w-full max-w-[36px] h-40 rounded-lg overflow-hidden bg-surface-container-low">
                     <motion.div initial={{ height: 0 }} animate={{ height: `${pct(m.approved)}%` }} className="bg-emerald-500" />
                     <motion.div initial={{ height: 0 }} animate={{ height: `${pct(m.pending)}%` }} className="bg-amber-500" />
                     <motion.div initial={{ height: 0 }} animate={{ height: `${pct(m.rejected)}%` }} className="bg-rose-500" />
                   </div>
-                  <span className="text-[10px] text-slate-500">{monthNames[i]}</span>
-                  <span className="text-[10px] text-slate-400">{total}</span>
+                  <span className="text-[10px] text-on-surface-variant">{monthNames[i]}</span>
+                  <span className="text-[10px] text-on-surface-variant/75">{total}</span>
                 </div>
               );
             })}
@@ -66,7 +66,7 @@ export default function AdminDashboard() {
       <section>
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-semibold">Recent Requests</h3>
-          <Link to="/admin/leaves" className="text-sm text-primary-600">View all</Link>
+          <Link to="/admin/leaves" className="text-sm text-primary font-semibold hover:underline">View all</Link>
         </div>
         {loading ? (
           <ListSkeleton count={3} />
@@ -74,12 +74,12 @@ export default function AdminDashboard() {
           <div className="space-y-3">
             {data.recent.map((l) => (
               <Link key={l._id} to="/admin/leaves" className="card p-4 flex items-center gap-3 hover:shadow-card transition">
-                <div className="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-500/20 text-primary-600 dark:text-primary-300 grid place-items-center font-semibold">
+                <div className="w-10 h-10 rounded-full bg-primary-container text-on-primary-container border border-outline-variant/50 grid place-items-center font-semibold">
                   {l.employee?.name?.[0]}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold truncate">{l.employee?.name}</p>
-                  <p className="text-xs text-slate-500 truncate">
+                  <p className="text-xs text-on-surface-variant truncate">
                     {l.employee?.employeeId} · {l.totalDays} days · {fmtDate(l.startDate)}
                   </p>
                 </div>
@@ -97,7 +97,7 @@ export default function AdminDashboard() {
 }
 
 const Legend = ({ color, label }) => (
-  <span className="inline-flex items-center gap-1.5 text-slate-500">
+  <span className="inline-flex items-center gap-1.5 text-on-surface-variant">
     <span className={`w-3 h-3 rounded-full ${color}`} /> {label}
   </span>
 );

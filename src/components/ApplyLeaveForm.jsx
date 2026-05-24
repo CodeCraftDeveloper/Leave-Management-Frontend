@@ -118,20 +118,22 @@ export default function ApplyLeaveForm({ defaultDate, onSubmitted }) {
       {/* Dates Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-semibold text-primary dark:text-slate-300">
+          <label className="text-sm font-semibold text-primary">
             {isHalfDay ? 'Date' : 'Start Date'}
           </label>
           <input
             type="date"
+            onClick={(e) => e.target.showPicker?.()}
             className="w-full h-[48px] bg-surface-container-lowest border border-outline-variant rounded-xl px-4 text-base text-on-surface focus:outline-none focus:border-2 focus:border-primary focus:ring-0 transition"
             {...register('startDate', { required: true })}
           />
         </div>
         {!isHalfDay ? (
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-semibold text-primary dark:text-slate-300">End Date</label>
+            <label className="text-sm font-semibold text-primary">End Date</label>
             <input
               type="date"
+              onClick={(e) => e.target.showPicker?.()}
               className="w-full h-[48px] bg-surface-container-lowest border border-outline-variant rounded-xl px-4 text-base text-on-surface focus:outline-none focus:border-2 focus:border-primary focus:ring-0 transition"
               {...register('endDate', { required: true })}
             />

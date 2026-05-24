@@ -62,7 +62,7 @@ export default function Notifications() {
       {/* Header Area */}
       <div className="flex items-end justify-between border-b border-outline-variant/30 pb-3">
         <div>
-          <h1 className="font-bold text-headline-sm text-primary dark:text-slate-200 tracking-tight">Alerts</h1>
+          <h1 className="font-bold text-headline-sm text-primary tracking-tight">Alerts</h1>
           <p className="text-body-md text-on-surface-variant mt-1">Review your alerts and notifications.</p>
         </div>
         {data.unread > 0 && (
@@ -117,7 +117,7 @@ export default function Notifications() {
                   {/* Message details */}
                   <div className="flex-1 min-w-0 pt-0.5">
                     <div className="flex justify-between items-start gap-2">
-                      <h3 className={`text-sm font-bold truncate ${n.read ? 'text-on-surface' : 'text-primary dark:text-slate-200'}`}>
+                      <h3 className={`text-sm font-bold truncate ${n.read ? 'text-on-surface' : 'text-primary'}`}>
                         {n.title}
                       </h3>
                       <span className="text-[10px] font-semibold text-on-surface-variant whitespace-nowrap shrink-0">

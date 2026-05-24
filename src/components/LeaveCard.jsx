@@ -30,19 +30,19 @@ export default function LeaveCard({ leave, onClick, onCancel }) {
     <motion.article
       layout
       whileHover={{ y: -2 }}
-      className="bg-surface-container-lowest dark:bg-slate-900 rounded-xl p-md shadow-[0px_4px_20px_rgba(27,43,72,0.05)] border border-surface-container-high hover:border-primary/60 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-md cursor-pointer"
+      className="card p-4 hover:border-primary/60 transition-colors flex flex-col sm:flex-row sm:items-start justify-between gap-4 cursor-pointer"
       onClick={onClick}
     >
-      <div className="flex items-start gap-md flex-1 min-w-0">
+      <div className="flex gap-4 flex-1 min-w-0">
         {/* Type Icon Box */}
-        <div className="w-12 h-12 rounded-lg bg-surface-container flex items-center justify-center shrink-0 text-primary border border-outline-variant/10">
+        <div className="w-12 h-12 rounded-xl bg-surface-container flex items-center justify-center shrink-0 text-primary border border-outline-variant/30">
           <span className="material-symbols-outlined text-2xl">{iconName}</span>
         </div>
         
         {/* Content Details */}
-        <div className="space-y-1 flex-1 min-w-0">
+        <div className="space-y-1.5 flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="text-base font-bold text-primary dark:text-slate-200">
+            <h3 className="text-base font-bold text-primary">
               {leaveTypeLabel[leave.leaveType] || 'Leave'}
             </h3>
             <span className={`px-2 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider ${statusColors[leave.status] || ''}`}>
@@ -71,13 +71,13 @@ export default function LeaveCard({ leave, onClick, onCancel }) {
           {leave.reason && (
             <div className="text-xs text-on-surface-variant mt-2 pt-2 border-t border-outline-variant/10">
               <span className="font-semibold text-primary block mb-0.5">Reason</span>
-              <p className="text-slate-600 dark:text-slate-300 italic">"{leave.reason}"</p>
+              <p className="text-on-surface-variant/90 italic">"{leave.reason}"</p>
             </div>
           )}
           {leave.remarks && (
             <div className="text-xs text-on-surface-variant mt-2 pt-2 border-t border-outline-variant/10">
               <span className="font-semibold text-primary block mb-0.5">Manager Remarks</span>
-              <p className="text-slate-600 dark:text-slate-300 italic">"{leave.remarks}"</p>
+              <p className="text-on-surface-variant/90 italic">"{leave.remarks}"</p>
             </div>
           )}
         </div>

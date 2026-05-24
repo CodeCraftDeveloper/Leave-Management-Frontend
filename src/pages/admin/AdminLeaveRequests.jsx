@@ -56,7 +56,7 @@ export default function AdminLeaveRequests() {
           }}
           className="relative"
         >
-          <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/50" />
           <input
             value={filters.search}
             onChange={(e) => setFilters({ ...filters, search: e.target.value })}
@@ -83,21 +83,21 @@ export default function AdminLeaveRequests() {
           {data.items.map((l) => (
             <div key={l._id} className="card p-4">
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-500/20 text-primary-600 dark:text-primary-300 grid place-items-center font-semibold shrink-0">
+                <div className="w-10 h-10 rounded-full bg-primary-container text-on-primary-container border border-outline-variant/50 grid place-items-center font-semibold shrink-0">
                   {l.employee?.name?.[0]}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-wrap gap-2 items-center">
                     <p className="font-semibold truncate">{l.employee?.name}</p>
-                    <span className="text-xs text-slate-400">· {l.employee?.employeeId}</span>
+                    <span className="text-xs text-on-surface-variant/60">· {l.employee?.employeeId}</span>
                   </div>
-                  <p className="text-xs text-slate-500 truncate">{l.employee?.department}</p>
+                  <p className="text-xs text-on-surface-variant truncate">{l.employee?.department}</p>
                   <div className="flex flex-wrap gap-1.5 mt-2">
-                    <span className={`chip ${leaveTypeColors[l.leaveType]}`}>{leaveTypeLabel[l.leaveType]}</span>
                     <span className={`chip ${statusColors[l.status]} capitalize`}>{l.status}</span>
-                    <span className="chip bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">{l.totalDays} day{l.totalDays > 1 ? 's' : ''}</span>
+                    <span className={`chip ${leaveTypeColors[l.leaveType]}`}>{leaveTypeLabel[l.leaveType]}</span>
+                    <span className="chip bg-surface-container-low text-primary border border-outline-variant/30">{l.totalDays} day{l.totalDays > 1 ? 's' : ''}</span>
                   </div>
-                  <p className="text-xs text-slate-500 mt-2">
+                  <p className="text-xs text-on-surface-variant/75 mt-2">
                     {fmtDate(l.startDate)} → {fmtDate(l.endDate)}
                   </p>
                   <p className="text-sm mt-2 line-clamp-2">{l.reason}</p>
@@ -137,12 +137,12 @@ export default function AdminLeaveRequests() {
             <Row label="End" value={fmtDate(selected.endDate)} />
             <Row label="Total Days" value={selected.totalDays} />
             <div>
-              <p className="text-slate-500 text-xs uppercase">Reason</p>
+              <p className="text-on-surface-variant text-xs uppercase">Reason</p>
               <p>{selected.reason}</p>
             </div>
             {selected.adminComment && (
               <div>
-                <p className="text-slate-500 text-xs uppercase">Admin Comment</p>
+                <p className="text-on-surface-variant text-xs uppercase">Admin Comment</p>
                 <p>{selected.adminComment}</p>
               </div>
             )}
@@ -166,7 +166,7 @@ export default function AdminLeaveRequests() {
           </>
         }
       >
-        <p className="text-sm text-slate-500 mb-3">
+        <p className="text-sm text-on-surface-variant mb-3">
           {action === 'approved' ? 'Approve' : 'Reject'} this leave for <b>{selected?.employee?.name}</b>?
         </p>
         <label className="label">Comment (optional)</label>
@@ -183,8 +183,8 @@ export default function AdminLeaveRequests() {
 }
 
 const Row = ({ label, value }) => (
-  <div className="flex justify-between border-b border-slate-100 dark:border-slate-800 py-2 gap-2">
-    <span className="text-slate-500 shrink-0">{label}</span>
+  <div className="flex justify-between border-b border-outline-variant/30 py-2 gap-2">
+    <span className="text-on-surface-variant shrink-0">{label}</span>
     <span className="font-medium text-right truncate capitalize">{value}</span>
   </div>
 );

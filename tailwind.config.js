@@ -51,16 +51,19 @@ export default {
           },
           primary: {
             DEFAULT: '#ffffff',
+            container: '#ffffff',
             fixed: '#091b37',
             'fixed-variant': '#374765',
           },
           secondary: {
             DEFAULT: '#ffffff',
+            container: '#ffffff',
             fixed: '#410003',
             'fixed-variant': '#93000e',
           },
           tertiary: {
             DEFAULT: '#ffffff',
+            container: '#ffffff',
             fixed: '#011d35',
             'fixed-variant': '#314862',
           },
@@ -73,6 +76,9 @@ export default {
           DEFAULT: '#ba1a1a',
           container: '#ffdad6',
         },
+        'on-primary-container': '#ffffff',
+        'on-secondary-container': '#ffffff',
+        'on-tertiary-container': '#ffffff',
         accent: {
           500: '#8b5cf6',
           600: '#7c3aed',
