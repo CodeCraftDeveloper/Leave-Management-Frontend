@@ -61,14 +61,14 @@ export default function AdminLeaveRequests() {
             value={filters.search}
             onChange={(e) => setFilters({ ...filters, search: e.target.value })}
             placeholder="Search employee by name, ID or department"
-            className="input pl-10"
+            className="input pl-10 text-sm sm:text-base"
           />
         </form>
         <div className="grid grid-cols-2 gap-3">
-          <select value={filters.status} onChange={(e) => setFilters({ ...filters, status: e.target.value })} className="input">
+          <select value={filters.status} onChange={(e) => setFilters({ ...filters, status: e.target.value })} className="input text-sm sm:text-base">
             {statusOptions.map((s) => <option key={s} value={s} className="capitalize">{s}</option>)}
           </select>
-          <select value={filters.type} onChange={(e) => setFilters({ ...filters, type: e.target.value })} className="input">
+          <select value={filters.type} onChange={(e) => setFilters({ ...filters, type: e.target.value })} className="input text-sm sm:text-base">
             {typeOptions.map((t) => <option key={t} value={t} className="capitalize">{t}</option>)}
           </select>
         </div>
@@ -88,14 +88,14 @@ export default function AdminLeaveRequests() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-wrap gap-2 items-center">
-                    <p className="font-semibold truncate">{l.employee?.name}</p>
+                    <p className="text-sm sm:text-base font-semibold truncate">{l.employee?.name}</p>
                     <span className="text-xs text-on-surface-variant/60">· {l.employee?.employeeId}</span>
                   </div>
                   <p className="text-xs text-on-surface-variant truncate">{l.employee?.department}</p>
                   <div className="flex flex-wrap gap-1.5 mt-2">
-                    <span className={`chip ${statusColors[l.status]} capitalize`}>{l.status}</span>
-                    <span className={`chip ${leaveTypeColors[l.leaveType]}`}>{leaveTypeLabel[l.leaveType]}</span>
-                    <span className="chip bg-surface-container-low text-primary border border-outline-variant/30">{l.totalDays} day{l.totalDays > 1 ? 's' : ''}</span>
+                    <span className={`chip text-[11px] sm:text-xs ${statusColors[l.status]} capitalize`}>{l.status}</span>
+                    <span className={`chip text-[11px] sm:text-xs ${leaveTypeColors[l.leaveType]}`}>{leaveTypeLabel[l.leaveType]}</span>
+                    <span className="chip text-[11px] sm:text-xs bg-surface-container-low text-primary border border-outline-variant/30">{l.totalDays} day{l.totalDays > 1 ? 's' : ''}</span>
                   </div>
                   <p className="text-xs text-on-surface-variant/75 mt-2">
                     {fmtDate(l.startDate)} → {fmtDate(l.endDate)}
@@ -104,13 +104,13 @@ export default function AdminLeaveRequests() {
                 </div>
               </div>
               <div className="flex gap-2 mt-3">
-                <button onClick={() => setSelected(l)} className="btn-outline flex-1">Details</button>
+                <button onClick={() => setSelected(l)} className="btn-outline flex-1 gap-1 px-2 text-xs sm:gap-2 sm:px-4 sm:text-sm">Details</button>
                 {l.status === 'pending' && (
                   <>
-                    <button onClick={() => { setSelected(l); setAction('approved'); }} className="btn bg-emerald-500 text-white flex-1">
+                    <button onClick={() => { setSelected(l); setAction('approved'); }} className="btn bg-emerald-500 text-white flex-1 gap-1 px-2 text-xs sm:gap-2 sm:px-4 sm:text-sm">
                       <FiCheck /> Approve
                     </button>
-                    <button onClick={() => { setSelected(l); setAction('rejected'); }} className="btn bg-rose-500 text-white flex-1">
+                    <button onClick={() => { setSelected(l); setAction('rejected'); }} className="btn bg-rose-500 text-white flex-1 gap-1 px-2 text-xs sm:gap-2 sm:px-4 sm:text-sm">
                       <FiX /> Reject
                     </button>
                   </>
