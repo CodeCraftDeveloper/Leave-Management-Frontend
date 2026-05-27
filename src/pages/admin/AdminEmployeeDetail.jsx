@@ -7,7 +7,7 @@ import LeaveCard from '../../components/LeaveCard';
 import { ListSkeleton } from '../../components/Skeleton';
 import EmptyState from '../../components/EmptyState';
 import { getEmployeeDetail, updateEmployeeWorkDetails } from '../../services/adminService';
-import { fmtDate, leaveTypeLabel } from '../../utils/format';
+import { fmtDate } from '../../utils/format';
 import ApplyOnBehalfModal from '../../components/ApplyOnBehalfModal';
 
 export default function AdminEmployeeDetail() {
@@ -109,14 +109,12 @@ export default function AdminEmployeeDetail() {
       </section>
 
       <section>
-        <h3 className="font-semibold mb-3">Leave Balance</h3>
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-          {Object.entries(employee.leaveBalance || {}).map(([k, v]) => (
-            <div key={k} className="card p-4">
-              <p className="text-xs text-slate-500">{leaveTypeLabel[k]}</p>
-              <p className="text-2xl font-bold mt-1">{v}</p>
-            </div>
-          ))}
+        <h3 className="font-semibold mb-3">Leave Policy</h3>
+        <div className="card p-5">
+          <p className="text-sm font-semibold text-primary">2 free leaves per month</p>
+          <p className="text-xs text-slate-500 mt-1">
+            Leave types are used for categorisation only. Extra leave days are deducted during payroll calculation.
+          </p>
         </div>
       </section>
 

@@ -22,6 +22,8 @@ export default function ApplyOnBehalfModal({ open, onClose, employee, onSuccess 
   });
   
   const [holidays, setHolidays] = useState([]);
+  const [staffingAlert, setStaffingAlert] = useState(null);
+  const [staffingOverrideReason, setStaffingOverrideReason] = useState('');
 
   useEffect(() => {
     if (open) {
@@ -34,6 +36,8 @@ export default function ApplyOnBehalfModal({ open, onClose, employee, onSuccess 
         isHalfDay: false,
         halfDaySession: 'first_half',
       });
+      setStaffingAlert(null);
+      setStaffingOverrideReason('');
     }
   }, [open, reset, today]);
 
@@ -41,6 +45,7 @@ export default function ApplyOnBehalfModal({ open, onClose, employee, onSuccess 
   const startDate = watch('startDate');
   const endDate = watch('endDate');
   const isHalfDay = watch('isHalfDay');
+  const halfDaySession = watch('halfDaySession');
 
   // Sync end date with start date if half day
   useEffect(() => {
@@ -48,6 +53,11 @@ export default function ApplyOnBehalfModal({ open, onClose, employee, onSuccess 
       setValue('endDate', startDate);
     }
   }, [isHalfDay, startDate, setValue]);
+
+  useEffect(() => {
+    setStaffingAlert(null);
+    setStaffingOverrideReason('');
+  }, [leaveType, startDate, endDate, isHalfDay, halfDaySession]);
 
   const totalDays = useMemo(() => {
     if (!startDate || !endDate) return 0;
@@ -59,12 +69,6 @@ export default function ApplyOnBehalfModal({ open, onClose, employee, onSuccess 
     return count > 0 ? count : 0;
   }, [startDate, endDate, isHalfDay, holidays]);
 
-  const balance = useMemo(() => {
-    return employee?.leaveBalance?.[leaveType] ?? 0;
-  }, [employee, leaveType]);
-
-  const isOverBalance = totalDays > balance;
-
   const onSubmit = async (data) => {
     if (!data.isHalfDay && new Date(data.endDate) < new Date(data.startDate)) {
       toast.error('End date cannot be before start date');
@@ -74,8 +78,8 @@ export default function ApplyOnBehalfModal({ open, onClose, employee, onSuccess 
       toast.error('The selected duration contains no countable leave days');
       return;
     }
-    if (isOverBalance) {
-      toast.error('Insufficient leave balance');
+    if (staffingAlert && !staffingOverrideReason.trim()) {
+      toast.error('Enter an override reason before approving this leave');
       return;
     }
 
@@ -88,12 +92,16 @@ export default function ApplyOnBehalfModal({ open, onClose, employee, onSuccess 
         reason: data.reason,
         isHalfDay: data.isHalfDay,
         halfDaySession: data.isHalfDay ? data.halfDaySession : '',
+        overrideStaffingLimit: !!staffingAlert,
+        staffingOverrideReason: staffingAlert ? staffingOverrideReason.trim() : '',
       });
       toast.success('Leave applied successfully');
       onSuccess?.();
       onClose();
-    } catch (err) {
-      // Errors handled by api.js toast
+    } catch (error) {
+      if (error.response?.data?.code === 'STAFFING_COVERAGE_LIMIT') {
+        setStaffingAlert(error.response.data.staffingCoverage);
+      }
     }
   };
 
@@ -110,9 +118,9 @@ export default function ApplyOnBehalfModal({ open, onClose, employee, onSuccess 
             </select>
           </div>
           <div className="flex flex-col justify-end">
-            <div className="rounded-xl border border-outline-variant/30 px-3 py-2 flex items-center justify-between bg-surface-container-low">
-              <span className="text-xs text-on-surface-variant">Balance:</span>
-              <span className="text-sm font-bold text-primary">{balance} days</span>
+            <div className="rounded-xl border border-outline-variant/30 px-3 py-2 bg-surface-container-low">
+              <span className="text-xs text-on-surface-variant">Policy:</span>
+              <span className="block text-sm font-bold text-primary">2 free leaves/month</span>
             </div>
           </div>
         </div>
@@ -156,14 +164,31 @@ export default function ApplyOnBehalfModal({ open, onClose, employee, onSuccess 
           )}
         </div>
 
-        {totalDays > 0 && isOverBalance && (
-          <div className="flex items-start gap-2.5 text-xs text-rose-600 bg-rose-50 dark:bg-rose-950/20 dark:text-rose-400 p-2.5 rounded-xl border border-rose-200 dark:border-rose-900/50">
-            <FiAlertCircle className="w-4 h-4 flex-shrink-0 text-rose-500 mt-0.5" />
+        {staffingAlert && (
+          <div className="space-y-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-100">
+            <div className="flex items-start gap-2.5 text-xs">
+              <FiAlertCircle className="mt-0.5 w-4 shrink-0 text-amber-600" />
+              <div>
+                <p className="font-semibold">Department coverage limit reached</p>
+                <p className="mt-0.5">
+                  {staffingAlert.department} must keep {staffingAlert.minimumOnDuty} employee(s) on duty.
+                </p>
+                {staffingAlert.violations.slice(0, 3).map((violation) => (
+                  <p key={`${violation.date}-${violation.session}`} className="mt-1">
+                    {violation.date} ({violation.sessionLabel}): {violation.availableStaff} available
+                  </p>
+                ))}
+              </div>
+            </div>
             <div>
-              <p className="font-semibold">Insufficient Balance</p>
-              <p className="text-rose-500/90 dark:text-rose-400/90 mt-0.5">
-                Requesting <b>{totalDays} days</b>, but employee has <b>{balance} days</b> remaining.
-              </p>
+              <label className="label text-xs">Override reason (required)</label>
+              <textarea
+                rows={2}
+                value={staffingOverrideReason}
+                onChange={(event) => setStaffingOverrideReason(event.target.value)}
+                className="input text-sm"
+                placeholder="Explain why coverage can be overridden..."
+              />
             </div>
           </div>
         )}
@@ -195,10 +220,10 @@ export default function ApplyOnBehalfModal({ open, onClose, employee, onSuccess 
           </button>
           <button
             type="submit"
-            disabled={isSubmitting || totalDays === 0 || isOverBalance}
+            disabled={isSubmitting || totalDays === 0 || (!!staffingAlert && !staffingOverrideReason.trim())}
             className="btn btn-primary text-xs py-2 px-4 flex items-center gap-1.5"
           >
-            <FiSend className="w-3 h-3" /> {isSubmitting ? 'Submitting...' : 'Apply & Approve'}
+            <FiSend className="w-3 h-3" /> {isSubmitting ? 'Submitting...' : staffingAlert ? 'Override & Approve' : 'Apply & Approve'}
           </button>
         </div>
       </form>

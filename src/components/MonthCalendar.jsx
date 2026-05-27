@@ -91,9 +91,36 @@ export default function MonthCalendar({
   onClickDay,
   disablePastDays = false,
   selectedDate,
+  eventDisplay = 'chips',
 }) {
   const today = startOfDay(new Date());
   const weeks = useMemo(() => buildWeeks(month), [month]);
+  const summaryEventsByDay = useMemo(() => {
+    if (eventDisplay !== 'summary') return null;
+    const map = new Map();
+    weeks.flat().forEach((day) => {
+      const dayKey = startOfDay(day);
+      const matching = events.filter((event) => {
+        const start = startOfDay(parseDate(event.startDate));
+        const end = startOfDay(parseDate(event.endDate));
+        return !isNaN(start) && !isNaN(end) && start <= dayKey && dayKey <= end;
+      });
+      map.set(format(dayKey, 'yyyy-MM-dd'), matching);
+    });
+    return map;
+  }, [eventDisplay, events, weeks]);
+
+  const getEventsOnDay = (day) => {
+    const dayKey = startOfDay(day);
+    if (summaryEventsByDay) {
+      return summaryEventsByDay.get(format(dayKey, 'yyyy-MM-dd')) || [];
+    }
+    return events.filter((event) => {
+      const start = startOfDay(parseDate(event.startDate));
+      const end = startOfDay(parseDate(event.endDate));
+      return !isNaN(start) && !isNaN(end) && start <= dayKey && dayKey <= end;
+    });
+  };
 
   const goPrev = () => onChangeMonth(addMonths(startOfMonth(month), -1));
   const goNext = () => onChangeMonth(addMonths(startOfMonth(month), 1));
@@ -105,24 +132,16 @@ export default function MonthCalendar({
   const handleCellClick = (day) => {
     if (disablePastDays && isBefore(startOfDay(day), today)) return;
     const dayKey = startOfDay(day);
-    const eventsOnDay = events.filter((e) => {
-      const s = startOfDay(parseDate(e.startDate));
-      const en = startOfDay(parseDate(e.endDate));
-      if (isNaN(s) || isNaN(en)) return false;
-      return s <= dayKey && dayKey <= en;
-    }).sort((a, b) => parseDate(a.startDate) - parseDate(b.startDate));
+    const eventsOnDay = [...getEventsOnDay(day)]
+      .sort((a, b) => parseDate(a.startDate) - parseDate(b.startDate));
     onClickDay?.(dayKey, eventsOnDay);
   };
 
   const handleEventClick = (e, event) => {
     e.stopPropagation();
     const dayKey = startOfDay(parseDate(event.startDate));
-    const eventsOnDay = events.filter((ev) => {
-      const s = startOfDay(parseDate(ev.startDate));
-      const en = startOfDay(parseDate(ev.endDate));
-      if (isNaN(s) || isNaN(en)) return false;
-      return s <= dayKey && dayKey <= en;
-    }).sort((a, b) => parseDate(a.startDate) - parseDate(b.startDate));
+    const eventsOnDay = [...getEventsOnDay(dayKey)]
+      .sort((a, b) => parseDate(a.startDate) - parseDate(b.startDate));
     onClickDay?.(dayKey, eventsOnDay);
   };
 
@@ -167,14 +186,19 @@ export default function MonthCalendar({
 
       <div className="flex flex-col">
         {weeks.map((week, wi) => {
-          const { placed, overflowByCol } = layoutWeek(week, events);
+          const { placed, overflowByCol } = eventDisplay === 'chips'
+            ? layoutWeek(week, events)
+            : { placed: [], overflowByCol: {} };
           return (
             <motion.div
               key={wi}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.15, delay: wi * 0.02 }}
-              className="relative grid grid-cols-7 border-b border-slate-100 dark:border-slate-800 last:border-b-0 min-h-[3.5rem] sm:min-h-[4.5rem]"
+              className={[
+                'relative grid grid-cols-7 border-b border-slate-100 dark:border-slate-800 last:border-b-0',
+                eventDisplay === 'summary' ? 'min-h-[4.75rem] sm:min-h-[5rem]' : 'min-h-[3.5rem] sm:min-h-[4.5rem]',
+              ].join(' ')}
             >
               {week.map((day, di) => {
                 const inMonth = isSameMonth(day, month);
@@ -182,6 +206,9 @@ export default function MonthCalendar({
                 const isPast = isBefore(startOfDay(day), today);
                 const disabled = disablePastDays && isPast;
                 const isSelected = selectedDate && isSameDay(day, parseDate(selectedDate));
+                const dayEvents = getEventsOnDay(day);
+                const leaveCount = dayEvents.filter((event) => event.kind.startsWith('leave-')).length;
+                const hasHoliday = dayEvents.some((event) => event.kind === 'holiday');
                 return (
                   <button
                     key={di}
@@ -212,10 +239,25 @@ export default function MonthCalendar({
                         {day.getDate()}
                       </span>
                     </div>
+                    {eventDisplay === 'summary' && (leaveCount > 0 || hasHoliday) && (
+                      <div className="mt-0.5 space-y-0.5">
+                        {leaveCount > 0 && (
+                          <span className="block truncate rounded bg-emerald-500 px-1 py-0.5 text-center text-[9px] sm:text-[10px] font-semibold leading-3 text-white">
+                            {leaveCount} off
+                          </span>
+                        )}
+                        {hasHoliday && (
+                          <span className="block truncate rounded bg-indigo-500 px-1 py-0.5 text-center text-[9px] sm:text-[10px] font-semibold leading-3 text-white">
+                            Holiday
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </button>
                 );
               })}
 
+              {eventDisplay === 'chips' && (
               <div className="absolute inset-x-0 top-8 sm:top-9 pointer-events-none">
                 {placed.map(({ event, startCol, endCol, lane }) => (
                   <button
@@ -250,6 +292,7 @@ export default function MonthCalendar({
                   </div>
                 ))}
               </div>
+              )}
             </motion.div>
           );
         })}

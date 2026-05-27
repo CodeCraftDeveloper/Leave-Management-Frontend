@@ -93,6 +93,15 @@ export default function AdminCalendar() {
     return { selectedLeaves: leavesOnDay, selectedHoliday: holidayOnDay };
   }, [date, leaves, holidays]);
 
+  const selectedLeaveSummary = useMemo(() => {
+    const counts = new Map();
+    selectedLeaves.forEach((leave) => {
+      const department = leave.employee?.department || 'Unassigned';
+      counts.set(department, (counts.get(department) || 0) + 1);
+    });
+    return [...counts.entries()].sort((a, b) => b[1] - a[1]);
+  }, [selectedLeaves]);
+
   const events = useMemo(() => {
     const holidayEvents = holidays.map((h) => ({
       id: 'h-' + h._id,
@@ -159,6 +168,7 @@ export default function AdminCalendar() {
                 onChangeMonth={setMonth}
                 onClickDay={handleClickDay}
                 selectedDate={date}
+                eventDisplay="summary"
               />
             )}
           </motion.div>
@@ -180,6 +190,21 @@ export default function AdminCalendar() {
                   <p className="text-sm text-indigo-700/80 dark:text-indigo-300/80 mt-0.5">
                     {selectedHoliday.description || 'Official Company Holiday'}
                   </p>
+                </div>
+              </div>
+            )}
+
+            {selectedLeaves.length > 0 && (
+              <div className="mb-3 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-emerald-950 dark:border-emerald-900/50 dark:bg-emerald-950/20 dark:text-emerald-100">
+                <p className="text-sm font-semibold">
+                  {selectedLeaves.length} employee{selectedLeaves.length === 1 ? '' : 's'} on approved leave
+                </p>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {selectedLeaveSummary.map(([department, count]) => (
+                    <span key={department} className="rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-medium text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-200">
+                      {department}: {count}
+                    </span>
+                  ))}
                 </div>
               </div>
             )}
@@ -206,6 +231,11 @@ export default function AdminCalendar() {
                       <span className={`chip mt-2.5 ${leaveTypeColors[l.leaveType]}`}>
                         {leaveTypeLabel[l.leaveType]}
                       </span>
+                      {l.staffingOverride && (
+                        <p className="mt-2 text-[11px] font-medium text-amber-700 dark:text-amber-300">
+                          Coverage override recorded
+                        </p>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -322,6 +352,20 @@ export default function AdminCalendar() {
           </div>
         )}
         {selectedLeaves.length > 0 && (
+          <div className="mb-3 rounded-xl border border-emerald-100 bg-emerald-50 p-3 text-emerald-950 dark:border-emerald-900/50 dark:bg-emerald-950/20 dark:text-emerald-100">
+            <p className="text-sm font-semibold">
+              {selectedLeaves.length} employee{selectedLeaves.length === 1 ? '' : 's'} on approved leave
+            </p>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {selectedLeaveSummary.map(([department, count]) => (
+                <span key={department} className="rounded-full bg-emerald-100 px-2 py-1 text-[11px] font-medium text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-200">
+                  {department}: {count}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+        {selectedLeaves.length > 0 && (
           <div className="space-y-3">
             {selectedLeaves.map((l) => (
               <div key={l._id} className="card p-4 flex justify-between items-start gap-3">
@@ -339,6 +383,11 @@ export default function AdminCalendar() {
                   <span className={`chip mt-2.5 inline-block ${leaveTypeColors[l.leaveType]}`}>
                     {leaveTypeLabel[l.leaveType]}
                   </span>
+                  {l.staffingOverride && (
+                    <p className="mt-2 text-[11px] font-medium text-amber-700 dark:text-amber-300">
+                      Coverage override: {l.staffingOverrideReason}
+                    </p>
+                  )}
                 </div>
               </div>
             ))}
