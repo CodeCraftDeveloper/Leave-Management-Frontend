@@ -35,3 +35,15 @@ export const getWeeklyDigestPreview = () =>
 
 export const sendWeeklyDigestNow = () =>
   api.post('/manage/weekly-digest/send').then((r) => r.data);
+
+export const listDepartments = (params = {}) =>
+  api.get('/manage/departments', { params }).then((r) => r.data);
+
+export const createDepartment = (payload) =>
+  api.post('/manage/departments', payload).then((r) => r.data);
+
+export const updateDepartment = (id, payload) =>
+  api.patch(`/manage/departments/${id}`, payload).then((r) => r.data);
+
+export const deleteDepartment = (id) =>
+  api.delete(`/manage/departments/${id}`).then((r) => r.data);

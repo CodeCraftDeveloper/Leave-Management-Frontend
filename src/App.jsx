@@ -17,6 +17,7 @@ import AdminCalendar from './pages/admin/AdminCalendar';
 import ReviewQueue from './pages/manage/ReviewQueue';
 import MyTeam from './pages/manage/MyTeam';
 import HeadEmployees from './pages/head/HeadEmployees';
+import HeadDepartments from './pages/head/HeadDepartments';
 
 export default function App() {
   return (
@@ -64,6 +65,7 @@ export default function App() {
         <Route index element={<AdminDashboard />} />
         <Route path="leaves" element={<ReviewQueue title="Leaves Register" subtitle="All employee and department-head leave applications for Head review and export" />} />
         <Route path="employees" element={<HeadEmployees />} />
+        <Route path="departments" element={<HeadDepartments />} />
         <Route path="calendar" element={<AdminCalendar />} />
       </Route>
 

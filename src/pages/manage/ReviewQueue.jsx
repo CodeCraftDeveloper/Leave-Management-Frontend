@@ -8,6 +8,7 @@ import { ListSkeleton } from '../../components/Skeleton';
 import Modal from '../../components/Modal';
 import { getReviewQueue, actionLeave, exportReviewQueueExcel } from '../../services/manageService';
 import { fmtDate, leaveTypeLabel, statusColors, leaveTypeColors } from '../../utils/format';
+import { useAuth } from '../../context/AuthContext';
 
 const statusOptions = ['pending', 'approved', 'rejected', 'all'];
 const typeOptions = ['all', 'leave'];
@@ -80,6 +81,7 @@ const activeFilterCount = (filters) => [
 // The server scopes the visible rows automatically based on the caller's role,
 // so the component does not need to know which role it's rendering for.
 export default function ReviewQueue({ title = 'Leave Requests', subtitle }) {
+  const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const initialStatus = statusOptions.includes(searchParams.get('status')) ? searchParams.get('status') : 'all';
   const initialType = typeOptions.includes(searchParams.get('type')) ? searchParams.get('type') : 'all';
@@ -336,6 +338,15 @@ export default function ReviewQueue({ title = 'Leave Requests', subtitle }) {
                     </button>
                   </>
                 )}
+                {user?.role === 'head'
+                  && l.status === 'approved'
+                  && new Date(l.startDate) > new Date()
+                  && l.actionedBy
+                  && String(l.actionedBy) !== String(user._id) && (
+                  <button onClick={() => { setSelected(l); setAction('rejected'); setComment(''); setStaffingAlert(null); }} className="btn bg-rose-500 text-white flex-1 gap-1 px-2 text-xs sm:gap-2 sm:px-4 sm:text-sm">
+                    <FiX /> Overturn
+                  </button>
+                )}
               </div>
             </div>
           ))}
@@ -380,7 +391,11 @@ export default function ReviewQueue({ title = 'Leave Requests', subtitle }) {
       <Modal
         open={!!action}
         onClose={() => { setAction(null); setComment(''); setStaffingAlert(null); }}
-        title={action === 'approved' ? 'Approve Leave' : 'Reject Leave'}
+        title={action === 'approved'
+          ? 'Approve Leave'
+          : selected?.status === 'approved'
+            ? 'Overturn Approval'
+            : 'Reject Leave'}
         footer={
           <>
             <button onClick={() => { setAction(null); setComment(''); setStaffingAlert(null); }} className="btn-outline">Cancel</button>
@@ -394,7 +409,11 @@ export default function ReviewQueue({ title = 'Leave Requests', subtitle }) {
         }
       >
         <p className="text-sm text-on-surface-variant mb-3">
-          {action === 'approved' ? 'Approve' : 'Reject'} this leave for <b>{selected?.employee?.name}</b>?
+          {action === 'approved'
+            ? 'Approve'
+            : selected?.status === 'approved'
+              ? 'Overturn the approval of'
+              : 'Reject'} this leave for <b>{selected?.employee?.name}</b>?
         </p>
         {staffingAlert && <StaffingAlert coverage={staffingAlert} />}
         <label className="label">

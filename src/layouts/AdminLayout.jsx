@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
-import { FiHome, FiFileText, FiUsers, FiCalendar, FiLogOut, FiMenu, FiX } from 'react-icons/fi';
+import { FiHome, FiFileText, FiUsers, FiCalendar, FiLogOut, FiMenu, FiX, FiGrid } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useState } from 'react';
@@ -10,6 +10,7 @@ const items = [
   { to: '/head', icon: FiHome, label: 'Dashboard', end: true },
   { to: '/head/leaves', icon: FiFileText, label: 'Leave Requests' },
   { to: '/head/employees', icon: FiUsers, label: 'Employees' },
+  { to: '/head/departments', icon: FiGrid, label: 'Departments' },
   { to: '/head/calendar', icon: FiCalendar, label: 'Calendar' },
 ];
 
