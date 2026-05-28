@@ -8,17 +8,13 @@ import { calculateDays } from '../utils/days';
 import Modal from './Modal';
 
 const types = [
-  { value: 'casual', label: 'Casual Leave' },
-  { value: 'sick', label: 'Sick Leave' },
-  { value: 'emergency', label: 'Emergency Leave' },
-  { value: 'paid', label: 'Paid Leave' },
-  { value: 'unpaid', label: 'Unpaid Leave' },
+  { value: 'leave', label: 'Leave' },
 ];
 
 export default function ApplyOnBehalfModal({ open, onClose, employee, onSuccess }) {
   const today = new Date().toISOString().slice(0, 10);
   const { register, handleSubmit, watch, setValue, reset, formState: { errors, isSubmitting } } = useForm({
-    defaultValues: { leaveType: 'casual', startDate: today, endDate: today, reason: '', isHalfDay: false, halfDaySession: 'first_half' },
+    defaultValues: { leaveType: 'leave', startDate: today, endDate: today, reason: '', isHalfDay: false, halfDaySession: 'first_half' },
   });
   
   const [holidays, setHolidays] = useState([]);
@@ -29,7 +25,7 @@ export default function ApplyOnBehalfModal({ open, onClose, employee, onSuccess 
     if (open) {
       getHolidays().then(setHolidays).catch(() => {});
       reset({
-        leaveType: 'casual',
+        leaveType: 'leave',
         startDate: today,
         endDate: today,
         reason: '',

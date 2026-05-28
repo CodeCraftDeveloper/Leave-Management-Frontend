@@ -1,23 +1,16 @@
 import { NavLink } from 'react-router-dom';
-import { FiHome, FiPlusCircle, FiCalendar, FiBell, FiUser, FiLogOut, FiClock } from 'react-icons/fi';
+import { FiLogOut } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
 import BrandLogo from './BrandLogo';
-
-const items = [
-  { to: '/', icon: FiHome, label: 'Dashboard', end: true },
-  { to: '/apply', icon: FiPlusCircle, label: 'Apply Leave' },
-  { to: '/calendar?tab=history', icon: FiClock, label: 'Leave History' },
-  { to: '/calendar', icon: FiCalendar, label: 'Calendar', end: true },
-  { to: '/notifications', icon: FiBell, label: 'Notifications' },
-  { to: '/profile', icon: FiUser, label: 'Profile' },
-];
+import { getNavItemsForRole } from './navigationItems';
 
 export default function Sidebar() {
   const { user, logout } = useAuth();
+  const items = getNavItemsForRole(user?.role);
   return (
     <aside className="hidden lg:flex flex-col w-64 shrink-0 h-screen sticky top-0 border-r border-outline-variant/60 bg-surface-container-lowest">
       <div className="p-6 border-b border-outline-variant/30">
-        <BrandLogo subtitle="Employee Portal" />
+        <BrandLogo subtitle={user?.role === 'dept_head' ? 'Department Portal' : 'Employee Portal'} />
       </div>
       <nav className="flex-1 p-4 space-y-1">
         {items.map(({ to, icon: Icon, label, end }) => (

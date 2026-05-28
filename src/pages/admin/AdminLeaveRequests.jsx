@@ -1,15 +1,15 @@
 import { useEffect, useState } from 'react';
-import { FiSearch, FiCheck, FiX, FiAlertCircle } from 'react-icons/fi';
+import { FiSearch, FiCheck, FiX, FiAlertCircle, FiDownload } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import PageHeader from '../../components/PageHeader';
 import EmptyState from '../../components/EmptyState';
 import { ListSkeleton } from '../../components/Skeleton';
 import Modal from '../../components/Modal';
-import { getAllLeaves, updateLeaveStatus } from '../../services/adminService';
+import { getAllLeaves, updateLeaveStatus, exportLeavesExcel } from '../../services/adminService';
 import { fmtDate, leaveTypeLabel, statusColors, leaveTypeColors } from '../../utils/format';
 
 const statusOptions = ['all', 'pending', 'approved', 'rejected'];
-const typeOptions = ['all', 'casual', 'sick', 'emergency', 'paid', 'unpaid'];
+const typeOptions = ['all', 'leave'];
 
 export default function AdminLeaveRequests() {
   const [filters, setFilters] = useState({ status: 'pending', type: 'all', search: '' });
@@ -19,6 +19,23 @@ export default function AdminLeaveRequests() {
   const [action, setAction] = useState(null);
   const [comment, setComment] = useState('');
   const [staffingAlert, setStaffingAlert] = useState(null);
+  const [exporting, setExporting] = useState(false);
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      await exportLeavesExcel({
+        status: filters.status === 'all' ? undefined : filters.status,
+        type: filters.type === 'all' ? undefined : filters.type,
+        search: filters.search || undefined,
+      });
+      toast.success('Leaves exported');
+    } catch {
+      // api interceptor already surfaces the error
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const load = () => {
     setLoading(true);
@@ -63,7 +80,17 @@ export default function AdminLeaveRequests() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="Leave Requests" subtitle="Approve or reject employee leave applications" />
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <PageHeader title="Leave Requests" subtitle="Approve or reject employee leave applications" />
+        <button
+          onClick={handleExport}
+          disabled={exporting}
+          className="btn-outline gap-2 text-sm disabled:opacity-60"
+        >
+          <FiDownload />
+          {exporting ? 'Exporting…' : 'Export Excel'}
+        </button>
+      </div>
 
       <div className="card p-4 space-y-3">
         <form
@@ -86,7 +113,11 @@ export default function AdminLeaveRequests() {
             {statusOptions.map((s) => <option key={s} value={s} className="capitalize">{s}</option>)}
           </select>
           <select value={filters.type} onChange={(e) => setFilters({ ...filters, type: e.target.value })} className="input text-sm sm:text-base">
-            {typeOptions.map((t) => <option key={t} value={t} className="capitalize">{t}</option>)}
+            {typeOptions.map((t) => (
+              <option key={t} value={t} className="capitalize">
+                {t === 'all' ? 'All types' : leaveTypeLabel[t]}
+              </option>
+            ))}
           </select>
         </div>
       </div>

@@ -9,6 +9,7 @@ export const fmtDate = (d, p = 'dd MMM yyyy') => {
 export const fmtDateShort = (d) => fmtDate(d, 'dd MMM');
 
 export const leaveTypeLabel = {
+  leave: 'Leave',
   casual: 'Casual',
   sick: 'Sick',
   emergency: 'Emergency',
@@ -24,6 +25,7 @@ export const statusColors = {
 };
 
 export const leaveTypeColors = {
+  leave: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300',
   casual: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300',
   sick: 'bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300',
   emergency: 'bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300',

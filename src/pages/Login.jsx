@@ -17,8 +17,10 @@ export default function Login() {
     try {
       const user = await login(data.username.trim(), data.password);
       toast.success('Welcome back!');
-      if (user.role === 'admin') {
-        navigate('/admin', { replace: true });
+      if (user.role === 'head') {
+        navigate('/head', { replace: true });
+      } else if (user.role === 'dept_head') {
+        navigate('/manage', { replace: true });
       } else {
         navigate('/', { replace: true });
       }
@@ -57,7 +59,7 @@ export default function Login() {
                 <FiUser className="absolute left-3.5 top-1/2 -translate-y-1/2 text-on-surface-variant/50" />
                 <input
                   type="text"
-                  placeholder="EMP001 or admin@example.com"
+                  placeholder="EMP001 or employee@example.com"
                   className="input pl-10"
                   {...register('username', { required: 'Employee ID or Email is required' })}
                 />
@@ -70,7 +72,7 @@ export default function Login() {
                 <FiLock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-on-surface-variant/50" />
                 <input
                   type={show ? 'text' : 'password'}
-                  placeholder="••••••••"
+                  placeholder="********"
                   className="input pl-10 pr-10"
                   {...register('password', { required: 'Password is required' })}
                 />
@@ -81,7 +83,7 @@ export default function Login() {
               {errors.password && <p className="text-xs text-rose-500 mt-1">{errors.password.message}</p>}
             </div>
             <button type="submit" disabled={isSubmitting} className="btn-primary w-full py-3 text-base">
-              {isSubmitting ? 'Signing in…' : 'Sign In'}
+              {isSubmitting ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
 

@@ -10,7 +10,7 @@ import { ListSkeleton } from '../components/Skeleton';
 import EmptyState from '../components/EmptyState';
 import Modal from '../components/Modal';
 import { leaveTypeLabel, statusColors, fmtDate } from '../utils/format';
-import { startOfDay as dateFnsStartOfDay, parseISO, differenceInDays } from 'date-fns';
+import { startOfDay as dateFnsStartOfDay, parseISO } from 'date-fns';
 
 const parseDate = (d) => {
   if (!d) return new Date();
@@ -19,8 +19,6 @@ const parseDate = (d) => {
 };
 
 const startOfDay = (d) => dateFnsStartOfDay(parseDate(d));
-
-const daysBetween = (a, b) => differenceInDays(startOfDay(b), startOfDay(a));
 
 const statusOptions = ['all', 'pending', 'approved', 'rejected', 'cancelled'];
 
@@ -133,7 +131,11 @@ export default function CalendarPage() {
     const year = today.getFullYear();
     const approvedDaysThisYear = leaves
       .filter((l) => l.status === 'approved' && new Date(l.startDate).getFullYear() === year)
-      .reduce((sum, l) => sum + daysBetween(l.startDate, l.endDate) + 1, 0);
+      .reduce((sum, l) => {
+        const totalDays = Number(l.totalDays);
+        if (Number.isFinite(totalDays)) return sum + totalDays;
+        return sum + (l.isHalfDay ? 0.5 : 1);
+      }, 0);
     const pendingCount = leaves.filter((l) => l.status === 'pending').length;
     const upcomingHolidays = holidays.filter((h) => startOfDay(h.date) >= today).length;
 
@@ -170,18 +172,18 @@ export default function CalendarPage() {
       <PageHeader title="Leave Calendar" subtitle="Plan and track your time off" />
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="card p-4">
-          <p className="text-xs text-on-surface-variant font-medium">Leave days taken in {stats.year}</p>
-          <p className="text-2xl font-bold mt-1 text-primary">{stats.approvedDaysThisYear}</p>
+      <div className="grid grid-cols-3 gap-2">
+        <div className="card rounded-2xl px-3 py-3 min-h-[92px] flex flex-col justify-between">
+          <p className="text-[11px] leading-tight text-on-surface-variant font-medium">Leave days taken in {stats.year}</p>
+          <p className="text-xl leading-none font-bold text-primary">{stats.approvedDaysThisYear}</p>
         </div>
-        <div className="card p-4">
-          <p className="text-xs text-on-surface-variant font-medium">Pending requests</p>
-          <p className="text-2xl font-bold mt-1 text-amber-600">{stats.pendingCount}</p>
+        <div className="card rounded-2xl px-3 py-3 min-h-[92px] flex flex-col justify-between">
+          <p className="text-[11px] leading-tight text-on-surface-variant font-medium">Pending requests</p>
+          <p className="text-xl leading-none font-bold text-amber-600">{stats.pendingCount}</p>
         </div>
-        <div className="card p-4">
-          <p className="text-xs text-on-surface-variant font-medium">Upcoming holidays</p>
-          <p className="text-2xl font-bold mt-1 text-indigo-600">{stats.upcomingHolidays}</p>
+        <div className="card rounded-2xl px-3 py-3 min-h-[92px] flex flex-col justify-between">
+          <p className="text-[11px] leading-tight text-on-surface-variant font-medium">Upcoming holidays</p>
+          <p className="text-xl leading-none font-bold text-indigo-600">{stats.upcomingHolidays}</p>
         </div>
       </div>
 

@@ -13,10 +13,10 @@ import Notifications from './pages/Notifications';
 import Profile from './pages/Profile';
 
 import AdminDashboard from './pages/admin/AdminDashboard';
-import AdminLeaveRequests from './pages/admin/AdminLeaveRequests';
-import AdminEmployees from './pages/admin/AdminEmployees';
-import AdminEmployeeDetail from './pages/admin/AdminEmployeeDetail';
 import AdminCalendar from './pages/admin/AdminCalendar';
+import ReviewQueue from './pages/manage/ReviewQueue';
+import MyTeam from './pages/manage/MyTeam';
+import HeadEmployees from './pages/head/HeadEmployees';
 
 export default function App() {
   return (
@@ -27,7 +27,7 @@ export default function App() {
       <Route
         path="/"
         element={
-          <ProtectedRoute role="employee">
+          <ProtectedRoute roles={['employee', 'dept_head']}>
             <MainLayout />
           </ProtectedRoute>
         }
@@ -41,19 +41,34 @@ export default function App() {
       </Route>
 
       <Route
-        path="/admin"
+        path="/manage"
         element={
-          <ProtectedRoute role="admin">
+          <ProtectedRoute roles={['dept_head']}>
+            <MainLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<Navigate to="/manage/leaves" replace />} />
+        <Route path="leaves" element={<ReviewQueue title="Leave Requests" subtitle="Employee requests routed to your department" />} />
+        <Route path="team" element={<MyTeam />} />
+      </Route>
+
+      <Route
+        path="/head"
+        element={
+          <ProtectedRoute role="head">
             <AdminLayout />
           </ProtectedRoute>
         }
       >
         <Route index element={<AdminDashboard />} />
-        <Route path="leaves" element={<AdminLeaveRequests />} />
-        <Route path="employees" element={<AdminEmployees />} />
-        <Route path="employees/:id" element={<AdminEmployeeDetail />} />
+        <Route path="leaves" element={<ReviewQueue title="Leaves Register" subtitle="All employee and department-head leave applications for Head review and export" />} />
+        <Route path="employees" element={<HeadEmployees />} />
         <Route path="calendar" element={<AdminCalendar />} />
       </Route>
+
+      <Route path="/admin" element={<Navigate to="/head" replace />} />
+      <Route path="/admin/*" element={<Navigate to="/head" replace />} />
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

@@ -6,11 +6,7 @@ import { applyLeave, getHolidays } from '../services/leaveService';
 import { calculateDays } from '../utils/days';
 
 const types = [
-  { value: 'casual', label: 'Casual Leave' },
-  { value: 'sick', label: 'Sick Leave' },
-  { value: 'emergency', label: 'Emergency Leave' },
-  { value: 'paid', label: 'Paid Leave' },
-  { value: 'unpaid', label: 'Unpaid Leave' },
+  { value: 'leave', label: 'Leave' },
 ];
 
 export default function ApplyLeaveForm({ defaultDate, onSubmitted }) {
@@ -18,7 +14,7 @@ export default function ApplyLeaveForm({ defaultDate, onSubmitted }) {
   const initialDate = defaultDate || today;
   const { register, handleSubmit, watch, setValue, formState: { errors, isSubmitting } } = useForm({
     defaultValues: {
-      leaveType: 'casual',
+      leaveType: 'leave',
       startDate: initialDate,
       endDate: initialDate,
       reason: '',

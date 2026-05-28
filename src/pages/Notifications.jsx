@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import EmptyState from '../components/EmptyState';
 import { ListSkeleton } from '../components/Skeleton';
+import Modal from '../components/Modal';
 import { getNotifications, markRead, markAllRead } from '../services/notificationService';
 import { fmtDate } from '../utils/format';
 
@@ -32,6 +33,7 @@ const getIconDetails = (type, read, title) => {
 export default function Notifications() {
   const [data, setData] = useState({ items: [], unread: 0 });
   const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState(null);
 
   const load = () => {
     setLoading(true);
@@ -44,9 +46,23 @@ export default function Notifications() {
 
   const onMark = async (id) => {
     try {
-      await markRead(id);
-      load();
+      const updated = await markRead(id);
+      setData((current) => ({
+        ...current,
+        unread: Math.max(0, current.unread - 1),
+        items: current.items.map((item) => (item._id === id ? updated : item)),
+      }));
+      return updated;
     } catch {}
+    return null;
+  };
+
+  const openNotification = async (notification) => {
+    setSelected(notification);
+    if (!notification.read) {
+      const updated = await onMark(notification._id);
+      if (updated) setSelected(updated);
+    }
   };
 
   const onMarkAll = async () => {
@@ -92,11 +108,12 @@ export default function Notifications() {
             {data.items.map((n) => {
               const { iconName, colorClass } = getIconDetails(n.type, n.read, n.title);
               return (
-                <motion.div
+                <motion.button
+                  type="button"
                   key={n._id}
                   layout
-                  onClick={() => !n.read && onMark(n._id)}
-                  className={`group relative flex gap-4 p-4 rounded-xl border transition-all duration-200 hover:shadow-[0px_8px_32px_rgba(27,43,72,0.08)] cursor-pointer overflow-hidden ${
+                  onClick={() => openNotification(n)}
+                  className={`group relative flex w-full gap-4 p-4 rounded-xl border text-left transition-all duration-200 hover:shadow-[0px_8px_32px_rgba(27,43,72,0.08)] focus:outline-none focus:ring-2 focus:ring-primary/40 overflow-hidden ${
                     n.read
                       ? 'bg-surface-container-lowest border-outline-variant/10 opacity-75'
                       : 'bg-surface-container-low border-outline-variant/20 shadow-[0px_4px_20px_rgba(27,43,72,0.05)]'
@@ -135,12 +152,59 @@ export default function Notifications() {
                   ) : (
                     <div className="w-2 h-2 mt-2 shrink-0" />
                   )}
-                </motion.div>
+                </motion.button>
               );
             })}
           </AnimatePresence>
         </div>
       )}
+
+      <Modal
+        open={!!selected}
+        onClose={() => setSelected(null)}
+        title="Alert Details"
+        footer={(
+          <button type="button" onClick={() => setSelected(null)} className="btn-primary">
+            Close
+          </button>
+        )}
+      >
+        {selected && (
+          <div className="space-y-4">
+            <div className="flex items-start gap-3">
+              <div className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 shadow-sm ${getIconDetails(selected.type, true, selected.title).colorClass}`}>
+                <span className="material-symbols-outlined text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>
+                  {getIconDetails(selected.type, true, selected.title).iconName}
+                </span>
+              </div>
+              <div className="min-w-0">
+                <h2 className="text-base font-bold text-primary">{selected.title}</h2>
+                <p className="mt-1 text-xs font-semibold text-on-surface-variant">
+                  {fmtDate(selected.createdAt, 'dd MMM yyyy, p')}
+                </p>
+              </div>
+            </div>
+            <div className="rounded-2xl border border-outline-variant/30 bg-surface-container-low p-4">
+              <p className="whitespace-pre-wrap text-sm leading-6 text-on-surface">{selected.message}</p>
+            </div>
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="rounded-xl bg-surface-container-low p-3">
+                <p className="font-semibold text-on-surface-variant">Type</p>
+                <p className="mt-1 capitalize text-primary">{selected.type || 'info'}</p>
+              </div>
+              <div className="rounded-xl bg-surface-container-low p-3">
+                <p className="font-semibold text-on-surface-variant">Status</p>
+                <p className="mt-1 text-primary">{selected.read ? 'Read' : 'Unread'}</p>
+              </div>
+            </div>
+            {selected.link && (
+              <a href={selected.link} className="btn-outline w-full text-sm">
+                Open related page
+              </a>
+            )}
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

@@ -19,3 +19,22 @@ export const updateEmployeeWorkDetails = (id, payload) =>
 
 export const applyLeaveOnBehalf = (payload) =>
   api.post('/admin/leaves', payload).then((r) => r.data);
+
+export const exportLeavesExcel = async (params = {}) => {
+  const response = await api.get('/admin/leaves/export', {
+    params,
+    responseType: 'blob',
+  });
+  const blob = new Blob([response.data], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+  const url = window.URL.createObjectURL(blob);
+  const stamp = new Date().toISOString().slice(0, 10);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `employee-leaves-${stamp}.xlsx`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
+};

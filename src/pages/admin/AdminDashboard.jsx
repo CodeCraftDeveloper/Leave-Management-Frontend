@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { FiUsers, FiClock, FiCheckCircle, FiXCircle } from 'react-icons/fi';
+import { FiUsers, FiClock, FiCheckCircle, FiXCircle, FiFileText, FiCalendar, FiArrowRight, FiShield } from 'react-icons/fi';
 import StatCard from '../../components/StatCard';
 import PageHeader from '../../components/PageHeader';
 import { ListSkeleton } from '../../components/Skeleton';
@@ -24,13 +24,40 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Admin Dashboard" subtitle="Overview of leave activity" />
+      <PageHeader title="Head Dashboard" subtitle="Overview of leave activity" />
 
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard title="Employees" value={data?.stats?.totalEmployees ?? 0} icon={FiUsers} accent="blue" />
         <StatCard title="Pending" value={data?.stats?.pending ?? 0} icon={FiClock} accent="amber" />
         <StatCard title="Approved" value={data?.stats?.approved ?? 0} icon={FiCheckCircle} accent="emerald" />
         <StatCard title="Rejected" value={data?.stats?.rejected ?? 0} icon={FiXCircle} accent="rose" />
+      </section>
+
+      <section className="grid md:grid-cols-2 xl:grid-cols-4 gap-3">
+        <WorkspaceLink
+          to="/head/leaves"
+          icon={FiFileText}
+          title="Review requests"
+          description="Approve, reject, filter, and export routed leave requests."
+        />
+        <WorkspaceLink
+          to="/head/employees"
+          icon={FiUsers}
+          title="Manage department heads"
+          description="Assign department-head access and review active staff."
+        />
+        <WorkspaceLink
+          to="/head/calendar"
+          icon={FiCalendar}
+          title="Leave calendar"
+          description="Inspect approved leaves and holiday overlap by date."
+        />
+        <WorkspaceLink
+          to="/head/leaves?status=approved"
+          icon={FiShield}
+          title="Reporting"
+          description="Export filtered request data for payroll and records."
+        />
       </section>
 
       <section className="card p-5">
@@ -66,14 +93,14 @@ export default function AdminDashboard() {
       <section>
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-semibold">Recent Requests</h3>
-          <Link to="/admin/leaves" className="text-sm text-primary font-semibold hover:underline">View all</Link>
+          <Link to="/head/leaves" className="text-sm text-primary font-semibold hover:underline">View all</Link>
         </div>
         {loading ? (
           <ListSkeleton count={3} />
         ) : (
           <div className="space-y-3">
             {data.recent.map((l) => (
-              <Link key={l._id} to="/admin/leaves" className="card p-4 flex items-center gap-3 hover:shadow-card transition">
+              <Link key={l._id} to="/head/leaves" className="card p-4 flex items-center gap-3 hover:shadow-card transition">
                 <div className="w-10 h-10 rounded-full bg-primary-container text-on-primary-container border border-outline-variant/50 grid place-items-center font-semibold">
                   {l.employee?.name?.[0]}
                 </div>
@@ -100,4 +127,17 @@ const Legend = ({ color, label }) => (
   <span className="inline-flex items-center gap-1.5 text-on-surface-variant">
     <span className={`w-3 h-3 rounded-full ${color}`} /> {label}
   </span>
+);
+
+const WorkspaceLink = ({ to, icon: Icon, title, description }) => (
+  <Link to={to} className="card p-4 group hover:shadow-card transition">
+    <div className="flex items-start justify-between gap-3">
+      <div className="w-10 h-10 rounded-2xl bg-primary text-on-primary grid place-items-center shrink-0">
+        <Icon />
+      </div>
+      <FiArrowRight className="text-on-surface-variant/40 group-hover:text-primary transition" />
+    </div>
+    <h3 className="mt-4 text-sm font-semibold">{title}</h3>
+    <p className="mt-1 text-xs leading-5 text-on-surface-variant">{description}</p>
+  </Link>
 );

@@ -7,10 +7,10 @@ import EmailSetupModal from '../components/EmailSetupModal';
 import BrandLogo from '../components/BrandLogo';
 
 const items = [
-  { to: '/admin', icon: FiHome, label: 'Dashboard', end: true },
-  { to: '/admin/leaves', icon: FiFileText, label: 'Leave Requests' },
-  { to: '/admin/employees', icon: FiUsers, label: 'Employees' },
-  { to: '/admin/calendar', icon: FiCalendar, label: 'Calendar' },
+  { to: '/head', icon: FiHome, label: 'Dashboard', end: true },
+  { to: '/head/leaves', icon: FiFileText, label: 'Leave Requests' },
+  { to: '/head/employees', icon: FiUsers, label: 'Employees' },
+  { to: '/head/calendar', icon: FiCalendar, label: 'Calendar' },
 ];
 
 export default function AdminLayout() {
@@ -24,7 +24,7 @@ export default function AdminLayout() {
       {/* Sidebar - desktop */}
       <aside className="hidden lg:flex flex-col w-64 shrink-0 h-screen sticky top-0 border-r border-outline-variant/60 bg-surface-container-lowest">
         <div className="p-6 border-b border-outline-variant/30">
-          <BrandLogo subtitle="Admin Console" />
+          <BrandLogo subtitle="Head Console" />
         </div>
         <nav className="flex-1 p-4 space-y-1">
           {items.map(({ to, icon: Icon, label, end }) => (
@@ -60,7 +60,7 @@ export default function AdminLayout() {
             <button onClick={() => setOpen(false)} className="self-end p-2 rounded-full hover:bg-surface-container-low text-primary">
               <FiX />
             </button>
-            <BrandLogo subtitle="Admin Console" className="mt-2 mb-4" />
+            <BrandLogo subtitle="Head Console" className="mt-2 mb-4" />
             <nav className="space-y-1 mt-2">
               {items.map(({ to, icon: Icon, label, end }) => (
                 <NavLink
@@ -95,7 +95,7 @@ export default function AdminLayout() {
                 <FiMenu />
               </button>
               <div>
-                <p className="text-xs text-on-surface-variant/75 font-medium">Admin</p>
+                <p className="text-xs text-on-surface-variant/75 font-medium">Head</p>
                 <h2 className="text-lg font-bold">{user?.name}</h2>
               </div>
             </div>
