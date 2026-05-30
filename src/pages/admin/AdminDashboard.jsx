@@ -7,10 +7,14 @@ import { ListSkeleton } from '../../components/Skeleton';
 import { getDashboard } from '../../services/adminService';
 import { fmtDate, statusColors, leaveTypeLabel, leaveTypeColors } from '../../utils/format';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import { isSuperAdmin } from '../../utils/roles';
 
 const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 export default function AdminDashboard() {
+  const { user } = useAuth();
+  const superAdmin = isSuperAdmin(user);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -24,7 +28,10 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Head Dashboard" subtitle="Overview of leave activity" />
+      <PageHeader
+        title={superAdmin ? 'Super Admin Dashboard' : 'Head Dashboard'}
+        subtitle={superAdmin ? 'Overview of leave activity across all departments' : 'Overview of leave activity for your department(s)'}
+      />
 
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard title="Employees" value={data?.stats?.totalEmployees ?? 0} icon={FiUsers} accent="blue" />
@@ -43,8 +50,10 @@ export default function AdminDashboard() {
         <WorkspaceLink
           to="/head/employees"
           icon={FiUsers}
-          title="Manage department heads"
-          description="Assign department-head access and review active staff."
+          title={superAdmin ? 'Manage department heads' : 'Manage employees'}
+          description={superAdmin
+            ? 'Assign department-head access and review active staff.'
+            : 'Add, edit, and review staff in your department(s).'}
         />
         <WorkspaceLink
           to="/head/calendar"

@@ -12,6 +12,8 @@ import {
   deleteDepartment,
   getTeam,
 } from '../../services/manageService';
+import { useAuth } from '../../context/AuthContext';
+import { isSuperAdmin } from '../../utils/roles';
 
 const emptyForm = { name: '', code: '', description: '', heads: [] };
 
@@ -23,6 +25,8 @@ const toForm = (department) => ({
 });
 
 export default function HeadDepartments() {
+  const { user } = useAuth();
+  const superAdmin = isSuperAdmin(user);
   const [search, setSearch] = useState('');
   const [departments, setDepartments] = useState([]);
   const [employees, setEmployees] = useState([]);
@@ -134,12 +138,14 @@ export default function HeadDepartments() {
     <div className="space-y-5">
       <PageHeader
         title="Departments"
-        subtitle="Create departments and assign one or more department heads"
-        action={(
+        subtitle={superAdmin
+          ? 'Create departments and assign one or more department heads'
+          : 'The department(s) you head'}
+        action={superAdmin ? (
           <button type="button" onClick={openCreate} className="btn-primary gap-2 text-sm">
             <FiPlus /> New department
           </button>
-        )}
+        ) : null}
       />
 
       <div className="card p-3 flex flex-wrap items-center gap-3">
@@ -191,26 +197,28 @@ export default function HeadDepartments() {
                     </p>
                   )}
                 </div>
-                <div className="flex gap-1 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => openEdit(department)}
-                    className="p-2 rounded-lg hover:bg-surface-container-low text-primary"
-                    title="Edit"
-                  >
-                    <FiEdit2 />
-                  </button>
-                  {department.active && (
+                {superAdmin && (
+                  <div className="flex gap-1 shrink-0">
                     <button
                       type="button"
-                      onClick={() => setArchiveTarget(department)}
-                      className="p-2 rounded-lg hover:bg-rose-50 text-rose-500"
-                      title="Archive"
+                      onClick={() => openEdit(department)}
+                      className="p-2 rounded-lg hover:bg-surface-container-low text-primary"
+                      title="Edit"
                     >
-                      <FiArchive />
+                      <FiEdit2 />
                     </button>
-                  )}
-                </div>
+                    {department.active && (
+                      <button
+                        type="button"
+                        onClick={() => setArchiveTarget(department)}
+                        className="p-2 rounded-lg hover:bg-rose-50 text-rose-500"
+                        title="Archive"
+                      >
+                        <FiArchive />
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center gap-2 mt-3 text-xs text-on-surface-variant">

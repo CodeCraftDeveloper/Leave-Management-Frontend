@@ -13,6 +13,8 @@ import {
 } from '../../services/manageService';
 import { createEmployee, deleteEmployee, updateEmployee } from '../../services/adminService';
 import { fmtDate } from '../../utils/format';
+import { useAuth } from '../../context/AuthContext';
+import { isSuperAdmin } from '../../utils/roles';
 
 const roleLabel = {
   employee: 'Employee',
@@ -44,6 +46,8 @@ const toEmployeeForm = (employee) => ({
 const requiredFields = ['employeeId', 'name', 'email', 'department', 'designation'];
 
 export default function HeadEmployees() {
+  const { user } = useAuth();
+  const superAdmin = isSuperAdmin(user);
   const [search, setSearch] = useState('');
   const [data, setData] = useState({ items: [] });
   const [digest, setDigest] = useState(null);
@@ -61,7 +65,8 @@ export default function HeadEmployees() {
     setLoading(true);
     Promise.all([
       getTeam({ search: q || undefined }),
-      getWeeklyDigestPreview().catch(() => null),
+      // Weekly digest is a super-admin-only global view.
+      superAdmin ? getWeeklyDigestPreview().catch(() => null) : Promise.resolve(null),
     ])
       .then(([team, digestPreview]) => {
         setData(team);
@@ -178,33 +183,37 @@ export default function HeadEmployees() {
               <FiPlus />
               Add Employee
             </button>
-            <button
-              type="button"
-              onClick={sendDigest}
-              disabled={sendingDigest}
-              className="btn-outline h-10 text-xs sm:text-sm gap-2"
-            >
-              <FiSend />
-              {sendingDigest ? 'Sending...' : 'Send weekly digest'}
-            </button>
+            {superAdmin && (
+              <button
+                type="button"
+                onClick={sendDigest}
+                disabled={sendingDigest}
+                className="btn-outline h-10 text-xs sm:text-sm gap-2"
+              >
+                <FiSend />
+                {sendingDigest ? 'Sending...' : 'Send weekly digest'}
+              </button>
+            )}
           </div>
         )}
       />
 
-      <section className="card p-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <p className="text-sm font-semibold">Approved leave digest</p>
-            <p className="text-xs text-on-surface-variant mt-1">
-              Monday mail to heads includes approved leaves for the current week.
-            </p>
+      {superAdmin && (
+        <section className="card p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold">Approved leave digest</p>
+              <p className="text-xs text-on-surface-variant mt-1">
+                Monday mail to heads includes approved leaves for the current week.
+              </p>
+            </div>
+            <div className="text-xs text-on-surface-variant sm:text-right">
+              <p>{digest ? `${fmtDate(digest.weekStart)} to ${fmtDate(digest.weekEnd)}` : 'Digest window unavailable'}</p>
+              <p>{digest?.leaves?.length ?? 0} approved leave(s)</p>
+            </div>
           </div>
-          <div className="text-xs text-on-surface-variant sm:text-right">
-            <p>{digest ? `${fmtDate(digest.weekStart)} to ${fmtDate(digest.weekEnd)}` : 'Digest window unavailable'}</p>
-            <p>{digest?.leaves?.length ?? 0} approved leave(s)</p>
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       <form
         onSubmit={(event) => {
@@ -262,14 +271,16 @@ export default function HeadEmployees() {
                     </div>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setRoleTarget({ employee })}
-                  className="btn-outline w-full mt-3 text-xs"
-                >
-                  {employee.role === 'dept_head' ? <FiUserMinus /> : <FiUserCheck />}
-                  {employee.role === 'dept_head' ? 'Remove Department Head' : 'Make Department Head'}
-                </button>
+                {superAdmin && (
+                  <button
+                    type="button"
+                    onClick={() => setRoleTarget({ employee })}
+                    className="btn-outline w-full mt-3 text-xs"
+                  >
+                    {employee.role === 'dept_head' ? <FiUserMinus /> : <FiUserCheck />}
+                    {employee.role === 'dept_head' ? 'Remove Department Head' : 'Make Department Head'}
+                  </button>
+                )}
                 <div className="grid grid-cols-2 gap-2 mt-2">
                   <button
                     type="button"

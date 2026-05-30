@@ -5,12 +5,15 @@ import { useTheme } from '../context/ThemeContext';
 import { useState } from 'react';
 import EmailSetupModal from '../components/EmailSetupModal';
 import BrandLogo from '../components/BrandLogo';
+import { isSuperAdmin } from '../utils/roles';
 
-const items = [
+// Departments management is a global power — only the super admin gets that nav
+// entry. Scoped heads see only their own department's data on the other pages.
+const baseItems = [
   { to: '/head', icon: FiHome, label: 'Dashboard', end: true },
   { to: '/head/leaves', icon: FiFileText, label: 'Leave Requests' },
   { to: '/head/employees', icon: FiUsers, label: 'Employees' },
-  { to: '/head/departments', icon: FiGrid, label: 'Departments' },
+  { to: '/head/departments', icon: FiGrid, label: 'Departments', superAdminOnly: true },
   { to: '/head/calendar', icon: FiCalendar, label: 'Calendar' },
 ];
 
@@ -19,13 +22,15 @@ export default function AdminLayout() {
   const { theme, toggle } = useTheme();
   const [open, setOpen] = useState(false);
   const { pathname } = useLocation();
+  const superAdmin = isSuperAdmin(user);
+  const items = baseItems.filter((item) => !item.superAdminOnly || superAdmin);
 
   return (
     <div className="min-h-screen flex bg-background">
       {/* Sidebar - desktop */}
       <aside className="hidden lg:flex flex-col w-64 shrink-0 h-screen sticky top-0 border-r border-outline-variant/60 bg-surface-container-lowest">
         <div className="p-6 border-b border-outline-variant/30">
-          <BrandLogo subtitle="Head Console" />
+          <BrandLogo subtitle={superAdmin ? 'Super Admin Console' : 'Head Console'} />
         </div>
         <nav className="flex-1 p-4 space-y-1">
           {items.map(({ to, icon: Icon, label, end }) => (
@@ -61,7 +66,7 @@ export default function AdminLayout() {
             <button onClick={() => setOpen(false)} className="self-end p-2 rounded-full hover:bg-surface-container-low text-primary">
               <FiX />
             </button>
-            <BrandLogo subtitle="Head Console" className="mt-2 mb-4" />
+            <BrandLogo subtitle={superAdmin ? 'Super Admin Console' : 'Head Console'} className="mt-2 mb-4" />
             <nav className="space-y-1 mt-2">
               {items.map(({ to, icon: Icon, label, end }) => (
                 <NavLink
@@ -96,7 +101,7 @@ export default function AdminLayout() {
                 <FiMenu />
               </button>
               <div>
-                <p className="text-xs text-on-surface-variant/75 font-medium">Head</p>
+                <p className="text-xs text-on-surface-variant/75 font-medium">{superAdmin ? 'Super Admin' : 'Head'}</p>
                 <h2 className="text-lg font-bold">{user?.name}</h2>
               </div>
             </div>
