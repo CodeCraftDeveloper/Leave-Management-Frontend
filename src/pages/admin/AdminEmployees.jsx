@@ -7,12 +7,14 @@ import EmptyState from '../../components/EmptyState';
 import { ListSkeleton } from '../../components/Skeleton';
 import Modal from '../../components/Modal';
 import { createEmployee, deleteEmployee, getEmployees, updateEmployee } from '../../services/adminService';
+import { listDepartments } from '../../services/manageService';
 import ApplyOnBehalfModal from '../../components/ApplyOnBehalfModal';
 
 export default function AdminEmployees() {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [data, setData] = useState({ items: [] });
+  const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [editorEmployee, setEditorEmployee] = useState(undefined);
@@ -20,8 +22,14 @@ export default function AdminEmployees() {
 
   const load = (q = '') => {
     setLoading(true);
-    getEmployees({ search: q || undefined, limit: 100 })
-      .then(setData)
+    Promise.all([
+      getEmployees({ search: q || undefined, limit: 100 }),
+      listDepartments(),
+    ])
+      .then(([empData, deptData]) => {
+        setData(empData);
+        setDepartments(deptData.items || []);
+      })
       .finally(() => setLoading(false));
   };
 
@@ -137,6 +145,7 @@ export default function AdminEmployees() {
 
       <EmployeeEditorModal
         employee={editorEmployee}
+        departments={departments}
         onClose={() => setEditorEmployee(undefined)}
         onSaved={() => {
           setEditorEmployee(undefined);
@@ -158,7 +167,7 @@ const emptyEmployee = {
   joiningDate: '',
 };
 
-function EmployeeEditorModal({ employee, onClose, onSaved }) {
+function EmployeeEditorModal({ employee, departments = [], onClose, onSaved }) {
   const open = employee !== undefined;
   const isEditing = !!employee;
   const [form, setForm] = useState(emptyEmployee);
@@ -231,7 +240,7 @@ function EmployeeEditorModal({ employee, onClose, onSaved }) {
           </p>
         ) : null}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <Field label="Department *" name="department" value={form.department} onChange={change} required />
+          <SelectField label="Department *" name="department" value={form.department} onChange={change} options={departments.map((d) => d.name)} required />
           <Field label="Designation *" name="designation" value={form.designation} onChange={change} required />
         </div>
         <Field label="Joining Date" name="joiningDate" type="date" value={form.joiningDate} onChange={change} />
@@ -258,6 +267,26 @@ function Field({ label, name, type = 'text', value, onChange, ...props }) {
         className="input text-sm"
         {...props}
       />
+    </label>
+  );
+}
+
+function SelectField({ label, name, value, onChange, options, ...props }) {
+  return (
+    <label className="block">
+      <span className="label text-xs">{label}</span>
+      <select
+        name={name}
+        value={value}
+        onChange={onChange}
+        className="input text-sm"
+        {...props}
+      >
+        <option value="">Select department</option>
+        {options.map((opt) => (
+          <option key={opt} value={opt}>{opt}</option>
+        ))}
+      </select>
     </label>
   );
 }

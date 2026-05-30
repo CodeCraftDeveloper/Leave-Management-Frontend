@@ -7,21 +7,27 @@ import LeaveCard from '../../components/LeaveCard';
 import { ListSkeleton } from '../../components/Skeleton';
 import EmptyState from '../../components/EmptyState';
 import { getEmployeeDetail, updateEmployeeWorkDetails } from '../../services/adminService';
+import { listDepartments } from '../../services/manageService';
 import { fmtDate } from '../../utils/format';
 import ApplyOnBehalfModal from '../../components/ApplyOnBehalfModal';
 
 export default function AdminEmployeeDetail() {
   const { id } = useParams();
   const [data, setData] = useState(null);
+  const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [workDetails, setWorkDetails] = useState({ department: '', designation: '' });
   const [savingWorkDetails, setSavingWorkDetails] = useState(false);
 
   useEffect(() => {
-    getEmployeeDetail(id)
-      .then((next) => {
+    Promise.all([
+      getEmployeeDetail(id),
+      listDepartments(),
+    ])
+      .then(([next, deptData]) => {
         setData(next);
+        setDepartments(deptData.items || []);
         setWorkDetails({
           department: next.employee?.department || '',
           designation: next.employee?.designation || '',
@@ -86,12 +92,17 @@ export default function AdminEmployeeDetail() {
         <form onSubmit={saveWorkDetails} className="card p-5 grid sm:grid-cols-2 gap-4">
           <div>
             <label className="label">Department</label>
-            <input
+            <select
               value={workDetails.department}
               onChange={(event) => setWorkDetails((current) => ({ ...current, department: event.target.value }))}
               className="input"
               required
-            />
+            >
+              <option value="">Select department</option>
+              {departments.map((d) => (
+                <option key={d._id} value={d.name}>{d.name}</option>
+              ))}
+            </select>
           </div>
           <div>
             <label className="label">Designation</label>

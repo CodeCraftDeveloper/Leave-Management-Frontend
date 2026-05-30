@@ -1,5 +1,17 @@
-import { useEffect, useState } from 'react';
-import { FiEdit2, FiMail, FiPlus, FiSearch, FiShield, FiTrash2, FiUserMinus, FiUserCheck, FiSend } from 'react-icons/fi';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  FiCheckCircle,
+  FiEdit2,
+  FiMail,
+  FiPlus,
+  FiSearch,
+  FiShield,
+  FiTrash2,
+  FiUserMinus,
+  FiUserCheck,
+  FiSend,
+  FiUsers,
+} from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import PageHeader from '../../components/PageHeader';
 import EmptyState from '../../components/EmptyState';
@@ -9,6 +21,8 @@ import {
   getTeam,
   updateEmployeeRole,
   getWeeklyDigestPreview,
+  listDepartments,
+  setHeadsGroup,
   sendWeeklyDigestNow,
 } from '../../services/manageService';
 import { createEmployee, deleteEmployee, updateEmployee } from '../../services/adminService';
@@ -19,6 +33,7 @@ import { isSuperAdmin } from '../../utils/roles';
 const roleLabel = {
   employee: 'Employee',
   dept_head: 'Department Head',
+  head: 'Head',
 };
 
 const emptyForm = {
@@ -30,6 +45,7 @@ const emptyForm = {
   designation: '',
   joiningDate: '',
   password: '',
+  role: 'employee',
 };
 
 const toEmployeeForm = (employee) => ({
@@ -41,35 +57,51 @@ const toEmployeeForm = (employee) => ({
   designation: employee.designation || '',
   joiningDate: employee.joiningDate ? employee.joiningDate.slice(0, 10) : '',
   password: '',
+  role: employee.role || 'employee',
 });
 
-const requiredFields = ['employeeId', 'name', 'email', 'department', 'designation'];
+const requiredFields = ['employeeId', 'name', 'department', 'designation'];
 
 export default function HeadEmployees() {
   const { user } = useAuth();
   const superAdmin = isSuperAdmin(user);
   const [search, setSearch] = useState('');
+  const [departmentFilter, setDepartmentFilter] = useState('');
   const [data, setData] = useState({ items: [] });
+  const [departments, setDepartments] = useState([]);
+  const [headDirectory, setHeadDirectory] = useState([]);
   const [digest, setDigest] = useState(null);
   const [loading, setLoading] = useState(true);
   const [roleTarget, setRoleTarget] = useState(null);
+  const [assignHeadTarget, setAssignHeadTarget] = useState(null);
+  const [selectedHeadId, setSelectedHeadId] = useState('');
   const [employeeModal, setEmployeeModal] = useState(null);
   const [employeeForm, setEmployeeForm] = useState(emptyForm);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [savingRole, setSavingRole] = useState(false);
+  const [savingAssignedHead, setSavingAssignedHead] = useState(false);
+  const [removingHeadId, setRemovingHeadId] = useState('');
   const [savingEmployee, setSavingEmployee] = useState(false);
   const [deletingEmployee, setDeletingEmployee] = useState(false);
   const [sendingDigest, setSendingDigest] = useState(false);
 
-  const load = (q = search) => {
+  const load = (q = search, dept = departmentFilter) => {
     setLoading(true);
     Promise.all([
-      getTeam({ search: q || undefined }),
+      getTeam({
+        search: q || undefined,
+        department: dept || undefined,
+        includeHeads: superAdmin ? true : undefined,
+      }),
+      listDepartments(),
+      superAdmin ? getTeam({ includeHeads: true }).catch(() => ({ items: [] })) : Promise.resolve({ items: [] }),
       // Weekly digest is a super-admin-only global view.
       superAdmin ? getWeeklyDigestPreview().catch(() => null) : Promise.resolve(null),
     ])
-      .then(([team, digestPreview]) => {
+      .then(([team, departmentList, headList, digestPreview]) => {
         setData(team);
+        setDepartments(departmentList.items || []);
+        setHeadDirectory((headList.items || []).filter((employee) => employee.role === 'head'));
         setDigest(digestPreview);
       })
       .finally(() => setLoading(false));
@@ -91,6 +123,52 @@ export default function HeadEmployees() {
       load(search);
     } finally {
       setSavingRole(false);
+    }
+  };
+
+  const openAssignHead = ({ employee, department, approvalHeads }) => {
+    if (!department) {
+      toast.error('Create the department group before assigning a Head');
+      return;
+    }
+    const currentHeadIds = new Set(approvalHeads.map((head) => head._id));
+    const firstAvailable = headDirectory.find((head) => !currentHeadIds.has(head._id));
+    setSelectedHeadId(firstAvailable?._id || '');
+    setAssignHeadTarget({ employee, department, approvalHeads });
+  };
+
+  const confirmAssignHead = async () => {
+    if (!assignHeadTarget || !selectedHeadId) return;
+    setSavingAssignedHead(true);
+    try {
+      const headIds = [
+        ...assignHeadTarget.approvalHeads.map((head) => head._id),
+        selectedHeadId,
+      ];
+      await setHeadsGroup(assignHeadTarget.department._id, [...new Set(headIds)]);
+      const head = headDirectory.find((item) => item._id === selectedHeadId);
+      toast.success(`${head?.name || 'Head'} assigned to ${assignHeadTarget.department.name}`);
+      setAssignHeadTarget(null);
+      setSelectedHeadId('');
+      load(search, departmentFilter);
+    } finally {
+      setSavingAssignedHead(false);
+    }
+  };
+
+  const removeApprovalHead = async ({ department, approvalHeads, head }) => {
+    if (!department || !head) return;
+    if (!confirm(`Remove ${head.name} from approval heads for ${department.name}?`)) return;
+    setRemovingHeadId(`${department._id}:${head._id}`);
+    try {
+      const nextHeadIds = approvalHeads
+        .filter((current) => current._id !== head._id)
+        .map((current) => current._id);
+      await setHeadsGroup(department._id, nextHeadIds);
+      toast.success(`${head.name} removed from ${department.name}`);
+      load(search, departmentFilter);
+    } finally {
+      setRemovingHeadId('');
     }
   };
 
@@ -121,7 +199,7 @@ export default function HeadEmployees() {
   const submitEmployee = async () => {
     const missing = requiredFields.find((field) => !employeeForm[field].trim());
     if (missing) {
-      toast.error('Employee ID, name, email, department and designation are required');
+      toast.error('Employee ID, name, department and designation are required');
       return;
     }
     if (employeeModal?.mode === 'create' && employeeForm.password.length < 6) {
@@ -139,6 +217,7 @@ export default function HeadEmployees() {
         department: employeeForm.department,
         designation: employeeForm.designation,
         joiningDate: employeeForm.joiningDate || undefined,
+        role: superAdmin ? employeeForm.role : undefined,
       };
       if (employeeModal.mode === 'create') {
         await createEmployee({ ...payload, password: employeeForm.password });
@@ -166,6 +245,48 @@ export default function HeadEmployees() {
     } finally {
       setDeletingEmployee(false);
     }
+  };
+
+  const departmentByName = useMemo(() => {
+    const map = new Map();
+    for (const department of departments) map.set(department.name, department);
+    return map;
+  }, [departments]);
+
+  const visibleEmployees = useMemo(
+    () => data.items.filter((employee) => employee.role !== 'head'),
+    [data.items]
+  );
+
+  const headAccounts = headDirectory;
+
+  const verificationRows = useMemo(
+    () => visibleEmployees.map((employee) => {
+      const department = departmentByName.get(employee.department);
+      const heads = department?.heads || [];
+      return {
+        employee,
+        department,
+        deptHeads: heads.filter((head) => head.role === 'dept_head'),
+        approvalHeads: heads.filter((head) => head.role === 'head'),
+      };
+    }),
+    [departmentByName, visibleEmployees]
+  );
+
+  const verificationCounts = useMemo(() => ({
+    missingDepartment: verificationRows.filter((row) => !row.department).length,
+    missingHeads: verificationRows.filter((row) => row.deptHeads.length === 0 && row.approvalHeads.length === 0).length,
+  }), [verificationRows]);
+
+  const departmentOptions = useMemo(
+    () => departments.map((department) => department.name).sort((a, b) => a.localeCompare(b)),
+    [departments]
+  );
+
+  const headLabel = (head) => {
+    const email = head.notificationEmail || head.email;
+    return `${head.name}${head.employeeId ? ` (${head.employeeId})` : ''}${email ? ` - ${email}` : ''}`;
   };
 
   return (
@@ -218,17 +339,33 @@ export default function HeadEmployees() {
       <form
         onSubmit={(event) => {
           event.preventDefault();
-          load(search);
+          load(search, departmentFilter);
         }}
-        className="card p-3 relative"
+        className="card p-3 flex flex-col lg:flex-row gap-3"
       >
-        <FiSearch className="absolute left-6 top-1/2 -translate-y-1/2 text-on-surface-variant/50" />
-        <input
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          className="input pl-10 text-sm sm:text-base"
-          placeholder="Search by name, ID or email"
-        />
+        <label className="relative flex-1 min-w-0">
+          <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/50" />
+          <input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            className="input pl-9 text-sm sm:text-base"
+            placeholder="Search by name, ID or email"
+          />
+        </label>
+        <select
+          value={departmentFilter}
+          onChange={(event) => {
+            const nextDepartment = event.target.value;
+            setDepartmentFilter(nextDepartment);
+            load(search, nextDepartment);
+          }}
+          className="input text-sm lg:max-w-xs"
+        >
+          <option value="">All departments</option>
+          {departmentOptions.map((department) => (
+            <option key={department} value={department}>{department}</option>
+          ))}
+        </select>
       </form>
 
       {loading ? (
@@ -236,10 +373,88 @@ export default function HeadEmployees() {
       ) : data.items.length === 0 ? (
         <EmptyState title="No employees found" />
       ) : (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {data.items
-            .filter((employee) => employee.role !== 'head')
-            .map((employee) => (
+        <>
+          <section className="grid sm:grid-cols-3 gap-3">
+            <div className="card p-4 flex items-center gap-3">
+              <FiUsers className="text-primary-600 shrink-0" />
+              <div>
+                <p className="text-lg font-bold">{visibleEmployees.length}</p>
+                <p className="text-xs text-on-surface-variant">Visible employees</p>
+              </div>
+            </div>
+            <div className="card p-4 flex items-center gap-3">
+              <FiCheckCircle className="text-emerald-600 shrink-0" />
+              <div>
+                <p className="text-lg font-bold">
+                  {Math.max(0, visibleEmployees.length - verificationCounts.missingDepartment)}
+                </p>
+                <p className="text-xs text-on-surface-variant">Department links found</p>
+              </div>
+            </div>
+            <div className="card p-4 flex items-center gap-3">
+              <FiShield className="text-amber-500 shrink-0" />
+              <div>
+                <p className="text-lg font-bold">
+                  {Math.max(0, visibleEmployees.length - verificationCounts.missingHeads)}
+                </p>
+                <p className="text-xs text-on-surface-variant">Head mappings found</p>
+              </div>
+            </div>
+          </section>
+
+          {superAdmin && headAccounts.length > 0 && (
+            <section className="space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold">Head accounts</p>
+                  <p className="text-xs text-on-surface-variant">Create, edit, or remove global and department-scoped Head login accounts.</p>
+                </div>
+                <span className="chip text-xs bg-surface-container-low border border-outline-variant/30">
+                  {headAccounts.length} Head{headAccounts.length === 1 ? '' : 's'}
+                </span>
+              </div>
+              <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-3">
+                {headAccounts.map((head) => (
+                  <article key={head._id} className="card p-4 min-w-0">
+                    <div className="flex items-start gap-3">
+                      <div className="w-12 h-12 rounded-full bg-primary-container text-on-primary-container border border-outline-variant/50 grid place-items-center font-semibold shrink-0">
+                        {head.name?.[0]}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm sm:text-base font-semibold truncate">{head.name}</p>
+                        <p className="text-[11px] sm:text-xs text-on-surface-variant truncate">{head.employeeId} - {head.department}</p>
+                        <p className="text-[11px] sm:text-xs text-on-surface-variant/75 truncate inline-flex items-center gap-1 mt-2">
+                          <FiMail className="shrink-0" /> {head.email || head.notificationEmail}
+                        </p>
+                        <span className="chip mt-3 text-[11px] bg-primary-container text-on-primary-container border border-outline-variant/30">
+                          Head
+                        </span>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 mt-3">
+                      <button
+                        type="button"
+                        onClick={() => openEdit(head)}
+                        className="btn-outline text-xs gap-1 px-2"
+                      >
+                        <FiEdit2 /> Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDeleteTarget(head)}
+                        className="btn border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 text-xs gap-1 px-2"
+                      >
+                        <FiTrash2 /> Remove
+                      </button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </section>
+          )}
+
+          <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-3">
+            {verificationRows.map(({ employee, department, deptHeads, approvalHeads }) => (
               <article key={employee._id} className="card p-4 min-w-0">
                 <div className="flex items-start gap-3">
                   <div className="w-12 h-12 rounded-full bg-primary-container text-on-primary-container border border-outline-variant/50 grid place-items-center font-semibold shrink-0">
@@ -271,15 +486,76 @@ export default function HeadEmployees() {
                     </div>
                   </div>
                 </div>
+                <div className="mt-4 border-t border-outline-variant/40 pt-3 space-y-3">
+                  <div>
+                    <p className="text-[11px] uppercase text-on-surface-variant">Department group</p>
+                    <p className={`text-sm font-medium ${department ? 'text-on-surface' : 'text-rose-600'}`}>
+                      {department?.name || 'Missing department group'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[11px] uppercase text-on-surface-variant">Department head</p>
+                    {deptHeads.length ? (
+                      <div className="mt-1 flex flex-wrap gap-1.5">
+                        {deptHeads.map((head) => (
+                          <span key={head._id} className="chip text-[11px] bg-amber-50 text-amber-800 border border-amber-200">
+                            {headLabel(head)}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-on-surface-variant">No department head assigned</p>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-[11px] uppercase text-on-surface-variant">Approval heads</p>
+                    {approvalHeads.length ? (
+                      <div className="mt-1 flex flex-wrap gap-1.5">
+                        {approvalHeads.map((head) => (
+                          <span
+                            key={head._id}
+                            className="chip text-[11px] bg-primary-container text-on-primary-container border border-outline-variant/30 pr-1"
+                          >
+                            <span>{headLabel(head)}</span>
+                            {superAdmin && (
+                              <button
+                                type="button"
+                                onClick={() => removeApprovalHead({ department, approvalHeads, head })}
+                                disabled={removingHeadId === `${department?._id}:${head._id}`}
+                                className="ml-1 w-5 h-5 rounded-full grid place-items-center hover:bg-black/10 disabled:opacity-50"
+                                aria-label={`Remove ${head.name} from ${department?.name} approval heads`}
+                                title="Remove approval head"
+                              >
+                                ×
+                              </button>
+                            )}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-rose-600">No approval head assigned</p>
+                    )}
+                  </div>
+                </div>
                 {superAdmin && (
-                  <button
-                    type="button"
-                    onClick={() => setRoleTarget({ employee })}
-                    className="btn-outline w-full mt-3 text-xs"
-                  >
-                    {employee.role === 'dept_head' ? <FiUserMinus /> : <FiUserCheck />}
-                    {employee.role === 'dept_head' ? 'Remove Department Head' : 'Make Department Head'}
-                  </button>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3">
+                    <button
+                      type="button"
+                      onClick={() => setRoleTarget({ employee })}
+                      className="btn-outline text-xs"
+                    >
+                      {employee.role === 'dept_head' ? <FiUserMinus /> : <FiUserCheck />}
+                      {employee.role === 'dept_head' ? 'Remove Department Head' : 'Make Department Head'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => openAssignHead({ employee, department, approvalHeads })}
+                      disabled={!department || headDirectory.length === 0}
+                      className="btn-outline text-xs"
+                    >
+                      <FiShield /> Assign Head
+                    </button>
+                  </div>
                 )}
                 <div className="grid grid-cols-2 gap-2 mt-2">
                   <button
@@ -299,7 +575,8 @@ export default function HeadEmployees() {
                 </div>
               </article>
             ))}
-        </div>
+          </div>
+        </>
       )}
 
       <Modal
@@ -325,6 +602,70 @@ export default function HeadEmployees() {
       </Modal>
 
       <Modal
+        open={!!assignHeadTarget}
+        onClose={() => {
+          setAssignHeadTarget(null);
+          setSelectedHeadId('');
+        }}
+        title="Assign Approval Head"
+        footer={(
+          <>
+            <button
+              type="button"
+              onClick={() => {
+                setAssignHeadTarget(null);
+                setSelectedHeadId('');
+              }}
+              className="btn-outline"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={confirmAssignHead}
+              disabled={savingAssignedHead || !selectedHeadId}
+              className="btn-primary"
+            >
+              {savingAssignedHead ? 'Assigning...' : 'Assign Head'}
+            </button>
+          </>
+        )}
+      >
+        <div className="space-y-4">
+          <div className="rounded-lg border border-outline-variant/50 p-3">
+            <p className="text-xs uppercase text-on-surface-variant">Department</p>
+            <p className="text-sm font-semibold">{assignHeadTarget?.department?.name}</p>
+            <p className="text-xs text-on-surface-variant mt-1">
+              Employee: {assignHeadTarget?.employee?.name} ({assignHeadTarget?.employee?.employeeId})
+            </p>
+          </div>
+          <SelectField
+            label="Head"
+            value={selectedHeadId}
+            onChange={setSelectedHeadId}
+            options={headDirectory
+              .filter((head) => !assignHeadTarget?.approvalHeads?.some((current) => current._id === head._id))
+              .map((head) => ({
+                value: head._id,
+                label: headLabel(head),
+              }))}
+          />
+          {assignHeadTarget?.approvalHeads?.length ? (
+            <div>
+              <p className="text-xs uppercase text-on-surface-variant">Currently assigned</p>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {assignHeadTarget.approvalHeads.map((head) => (
+                  <span key={head._id} className="chip text-[11px] bg-primary-container text-on-primary-container border border-outline-variant/30">
+                    {headLabel(head)}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ) : null}
+        </div>
+      </Modal>
+
+      <Modal
         open={!!employeeModal}
         onClose={() => { setEmployeeModal(null); setEmployeeForm(emptyForm); }}
         title={employeeModal?.mode === 'create' ? 'Add Employee' : 'Edit Employee'}
@@ -344,11 +685,28 @@ export default function HeadEmployees() {
         )}
       >
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {superAdmin && (
+            <SelectField
+              label="Account Type"
+              value={employeeForm.role}
+              onChange={(value) => updateForm('role', value)}
+              options={[
+                { value: 'employee', label: 'Employee' },
+                { value: 'dept_head', label: 'Department Head' },
+                { value: 'head', label: 'Head' },
+              ]}
+            />
+          )}
           <Field label="Employee ID" value={employeeForm.employeeId} onChange={(value) => updateForm('employeeId', value)} />
           <Field label="Full Name" value={employeeForm.name} onChange={(value) => updateForm('name', value)} />
           <Field label="Email" type="email" value={employeeForm.email} onChange={(value) => updateForm('email', value)} />
           <Field label="Phone" value={employeeForm.phone} onChange={(value) => updateForm('phone', value)} />
-          <Field label="Department" value={employeeForm.department} onChange={(value) => updateForm('department', value)} />
+          <SelectField
+            label="Department"
+            value={employeeForm.department}
+            onChange={(value) => updateForm('department', value)}
+            options={departmentOptions.map((department) => ({ value: department, label: department }))}
+          />
           <Field label="Designation" value={employeeForm.designation} onChange={(value) => updateForm('designation', value)} />
           <Field label="Joining Date" type="date" value={employeeForm.joiningDate} onChange={(value) => updateForm('joiningDate', value)} />
           {employeeModal?.mode === 'create' && (
@@ -394,5 +752,21 @@ const Field = ({ label, value, onChange, type = 'text' }) => (
       onChange={(event) => onChange(event.target.value)}
       className="input text-sm"
     />
+  </label>
+);
+
+const SelectField = ({ label, value, onChange, options }) => (
+  <label className="block">
+    <span className="label">{label}</span>
+    <select
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+      className="input text-sm"
+    >
+      <option value="">Select {label.toLowerCase()}</option>
+      {options.map((option) => (
+        <option key={option.value} value={option.value}>{option.label}</option>
+      ))}
+    </select>
   </label>
 );
