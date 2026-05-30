@@ -36,8 +36,14 @@ export const getWeeklyDigestPreview = () =>
 export const sendWeeklyDigestNow = () =>
   api.post('/manage/weekly-digest/send').then((r) => r.data);
 
+export const createEmployee = (payload) =>
+  api.post('/manage/employees', payload).then((r) => r.data);
+
 export const listDepartments = (params = {}) =>
   api.get('/manage/departments', { params }).then((r) => r.data);
+
+export const getDepartment = (id, params = {}) =>
+  api.get(`/manage/departments/${id}`, { params }).then((r) => r.data);
 
 export const createDepartment = (payload) =>
   api.post('/manage/departments', payload).then((r) => r.data);
@@ -47,3 +53,15 @@ export const updateDepartment = (id, payload) =>
 
 export const deleteDepartment = (id) =>
   api.delete(`/manage/departments/${id}`).then((r) => r.data);
+
+export const addDepartmentMember = (id, employeeId) =>
+  api.post(`/manage/departments/${id}/members`, { employeeId }).then((r) => r.data);
+
+export const removeDepartmentMember = (id, employeeId) =>
+  api.delete(`/manage/departments/${id}/members/${employeeId}`).then((r) => r.data);
+
+export const setDepartmentHead = (id, employeeId) =>
+  api.patch(`/manage/departments/${id}/department-head`, { employeeId }).then((r) => r.data);
+
+export const setHeadsGroup = (id, employeeIds) =>
+  api.patch(`/manage/departments/${id}/heads-group`, { employeeIds }).then((r) => r.data);

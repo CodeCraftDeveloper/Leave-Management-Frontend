@@ -12,6 +12,13 @@ import { isSuperAdmin } from '../../utils/roles';
 
 const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
+const formatDepartmentScope = (departments = [], fallbackDepartment) => {
+  const visibleDepartments = departments.filter(Boolean);
+  if (visibleDepartments.length === 1) return `${visibleDepartments[0]} department`;
+  if (visibleDepartments.length > 1) return `${visibleDepartments.join(', ')} departments`;
+  return fallbackDepartment ? `${fallbackDepartment} department` : 'your department(s)';
+};
+
 export default function AdminDashboard() {
   const { user } = useAuth();
   const superAdmin = isSuperAdmin(user);
@@ -25,27 +32,37 @@ export default function AdminDashboard() {
   const max = data
     ? Math.max(1, ...data.monthly.map((m) => m.pending + m.approved + m.rejected))
     : 1;
+  const departmentScope = formatDepartmentScope(data?.scope?.departments, user?.department);
+  const dashboardTitle = superAdmin ? 'Super Admin Dashboard' : 'Department Head Dashboard';
+  const dashboardSubtitle = superAdmin
+    ? 'Overview of leave activity across all departments'
+    : `Overview of leave activity for ${departmentScope}`;
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title={superAdmin ? 'Super Admin Dashboard' : 'Head Dashboard'}
-        subtitle={superAdmin ? 'Overview of leave activity across all departments' : 'Overview of leave activity for your department(s)'}
-      />
+      <PageHeader title={dashboardTitle} subtitle={dashboardSubtitle} />
 
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard title="Employees" value={data?.stats?.totalEmployees ?? 0} icon={FiUsers} accent="blue" />
-        <StatCard title="Pending" value={data?.stats?.pending ?? 0} icon={FiClock} accent="amber" />
-        <StatCard title="Approved" value={data?.stats?.approved ?? 0} icon={FiCheckCircle} accent="emerald" />
-        <StatCard title="Rejected" value={data?.stats?.rejected ?? 0} icon={FiXCircle} accent="rose" />
+        <StatCard
+          title={superAdmin ? 'Employees' : 'Department employees'}
+          value={data?.stats?.totalEmployees ?? 0}
+          icon={FiUsers}
+          accent="blue"
+          subtitle={superAdmin ? 'Active workforce' : departmentScope}
+        />
+        <StatCard title="Pending review" value={data?.stats?.pending ?? 0} icon={FiClock} accent="amber" />
+        <StatCard title="Approved leaves" value={data?.stats?.approved ?? 0} icon={FiCheckCircle} accent="emerald" />
+        <StatCard title="Rejected leaves" value={data?.stats?.rejected ?? 0} icon={FiXCircle} accent="rose" />
       </section>
 
       <section className="grid md:grid-cols-2 xl:grid-cols-4 gap-3">
         <WorkspaceLink
           to="/head/leaves"
           icon={FiFileText}
-          title="Review requests"
-          description="Approve, reject, filter, and export routed leave requests."
+          title="Department requests"
+          description={superAdmin
+            ? 'Approve, reject, filter, and export routed leave requests.'
+            : `Review leave requests from ${departmentScope}.`}
         />
         <WorkspaceLink
           to="/head/employees"
@@ -53,24 +70,26 @@ export default function AdminDashboard() {
           title={superAdmin ? 'Manage department heads' : 'Manage employees'}
           description={superAdmin
             ? 'Assign department-head access and review active staff.'
-            : 'Add, edit, and review staff in your department(s).'}
+            : `Add, edit, and review staff assigned to ${departmentScope}.`}
         />
         <WorkspaceLink
           to="/head/calendar"
           icon={FiCalendar}
-          title="Leave calendar"
-          description="Inspect approved leaves and holiday overlap by date."
+          title="Department calendar"
+          description="Inspect approved leaves, staffing gaps, and holiday overlap by date."
         />
         <WorkspaceLink
           to="/head/leaves?status=approved"
           icon={FiShield}
-          title="Reporting"
-          description="Export filtered request data for payroll and records."
+          title="Department reports"
+          description="Export department leave data for payroll and attendance records."
         />
       </section>
 
       <section className="card p-5">
-        <h3 className="font-semibold mb-4">Monthly Leave Analytics — {new Date().getFullYear()}</h3>
+        <h3 className="font-semibold mb-4">
+          Monthly Leave Analytics - {superAdmin ? 'All Departments' : departmentScope} - {new Date().getFullYear()}
+        </h3>
         {loading ? (
           <div className="h-48 skeleton" />
         ) : (
@@ -101,14 +120,14 @@ export default function AdminDashboard() {
 
       <section>
         <div className="flex items-center justify-between mb-3">
-          <h3 className="font-semibold">Recent Requests</h3>
+          <h3 className="font-semibold">Recent Department Requests</h3>
           <Link to="/head/leaves" className="text-sm text-primary font-semibold hover:underline">View all</Link>
         </div>
         {loading ? (
           <ListSkeleton count={3} />
         ) : (
           <div className="space-y-3">
-            {data.recent.map((l) => (
+            {data.recent.length ? data.recent.map((l) => (
               <Link key={l._id} to="/head/leaves" className="card p-4 flex items-center gap-3 hover:shadow-card transition">
                 <div className="w-10 h-10 rounded-full bg-primary-container text-on-primary-container border border-outline-variant/50 grid place-items-center font-semibold">
                   {l.employee?.name?.[0]}
@@ -116,7 +135,7 @@ export default function AdminDashboard() {
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold truncate">{l.employee?.name}</p>
                   <p className="text-xs text-on-surface-variant truncate">
-                    {l.employee?.employeeId} · {l.totalDays} days · {fmtDate(l.startDate)}
+                    {l.employee?.employeeId} - {l.employee?.department || 'Unassigned'} - {l.totalDays} days - {fmtDate(l.startDate)}
                   </p>
                 </div>
                 <div className="flex flex-col gap-1 items-end shrink-0">
@@ -124,7 +143,11 @@ export default function AdminDashboard() {
                   <span className={`chip ${leaveTypeColors[l.leaveType]}`}>{leaveTypeLabel[l.leaveType]}</span>
                 </div>
               </Link>
-            ))}
+            )) : (
+              <div className="card p-5 text-sm text-on-surface-variant">
+                No recent leave requests for {superAdmin ? 'the organisation' : departmentScope}.
+              </div>
+            )}
           </div>
         )}
       </section>
