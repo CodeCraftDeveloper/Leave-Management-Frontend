@@ -24,7 +24,7 @@ export default function Login() {
       } else if (user.role === 'head') {
         navigate('/head', { replace: true });
       } else if (user.role === 'dept_head') {
-        navigate('/head/leaves', { replace: true });
+        navigate('/review', { replace: true });
       } else {
         navigate('/', { replace: true });
       }

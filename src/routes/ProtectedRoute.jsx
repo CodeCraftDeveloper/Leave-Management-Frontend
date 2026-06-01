@@ -5,7 +5,7 @@ import LoadingScreen from '../components/LoadingScreen';
 // Where to send each role when they hit a route they cannot access.
 const defaultHomeFor = (role) => {
   if (role === 'head') return '/head';
-  if (role === 'dept_head') return '/head/leaves';
+  if (role === 'dept_head') return '/review';
   return '/';
 };
 
