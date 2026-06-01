@@ -10,7 +10,7 @@ export default function Sidebar() {
   return (
     <aside className="hidden lg:flex flex-col w-64 shrink-0 h-screen sticky top-0 border-r border-outline-variant/60 bg-surface-container-lowest">
       <div className="p-6 border-b border-outline-variant/30">
-        <BrandLogo subtitle={user?.role === 'dept_head' ? 'Department Portal' : 'Employee Portal'} />
+        <BrandLogo subtitle="Employee Portal" />
       </div>
       <nav className="flex-1 p-4 space-y-1">
         {items.map(({ to, icon: Icon, label, end }) => (

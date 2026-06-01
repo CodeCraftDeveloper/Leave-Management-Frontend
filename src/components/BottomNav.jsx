@@ -10,12 +10,8 @@ export default function BottomNav() {
   const [unread, setUnread] = useState(0);
   const [moreOpen, setMoreOpen] = useState(false);
   const allItems = getNavItemsForRole(user?.role);
-  const primaryItems = user?.role === 'dept_head'
-    ? allItems.filter((item) => ['/', '/apply', '/calendar', '/notifications'].includes(item.to))
-    : allItems.filter((item) => ['/', '/apply', '/calendar', '/notifications', '/profile'].includes(item.to));
-  const overflowItems = user?.role === 'dept_head'
-    ? allItems.filter((item) => !primaryItems.some((primary) => primary.to === item.to))
-    : [];
+  const primaryItems = allItems.filter((item) => ['/', '/apply', '/calendar', '/notifications', '/profile'].includes(item.to));
+  const overflowItems = [];
   const moreActive = overflowItems.some((item) => pathname === item.to || pathname.startsWith(`${item.to}/`));
 
   useEffect(() => {

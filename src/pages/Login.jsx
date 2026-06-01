@@ -1,5 +1,5 @@
 import { useForm } from 'react-hook-form';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FiUser, FiLock, FiEye, FiEyeOff } from 'react-icons/fi';
 import { useState } from 'react';
@@ -11,16 +11,20 @@ export default function Login() {
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm();
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [show, setShow] = useState(false);
 
   const onSubmit = async (data) => {
     try {
       const user = await login(data.username.trim(), data.password);
       toast.success('Welcome back!');
-      if (user.role === 'head') {
+      const from = location.state?.from;
+      if (from?.pathname) {
+        navigate(`${from.pathname}${from.search || ''}`, { replace: true });
+      } else if (user.role === 'head') {
         navigate('/head', { replace: true });
       } else if (user.role === 'dept_head') {
-        navigate('/manage', { replace: true });
+        navigate('/head/leaves', { replace: true });
       } else {
         navigate('/', { replace: true });
       }

@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { useAuth } from './context/AuthContext';
 import ProtectedRoute from './routes/ProtectedRoute';
 import MainLayout from './layouts/MainLayout';
 import AdminLayout from './layouts/AdminLayout';
@@ -15,9 +16,13 @@ import Profile from './pages/Profile';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminCalendar from './pages/admin/AdminCalendar';
 import ReviewQueue from './pages/manage/ReviewQueue';
-import MyTeam from './pages/manage/MyTeam';
 import HeadEmployees from './pages/head/HeadEmployees';
-import HeadDepartments from './pages/head/HeadDepartments';
+
+function HeadHome() {
+  const { user } = useAuth();
+  if (user?.role === 'dept_head') return <Navigate to="/head/leaves" replace />;
+  return <AdminDashboard />;
+}
 
 export default function App() {
   return (
@@ -42,30 +47,16 @@ export default function App() {
       </Route>
 
       <Route
-        path="/manage"
-        element={
-          <ProtectedRoute roles={['dept_head']}>
-            <MainLayout />
-          </ProtectedRoute>
-        }
-      >
-        <Route index element={<Navigate to="/manage/leaves" replace />} />
-        <Route path="leaves" element={<ReviewQueue title="Leave Requests" subtitle="Employee requests routed to your department" />} />
-        <Route path="team" element={<MyTeam />} />
-      </Route>
-
-      <Route
         path="/head"
         element={
-          <ProtectedRoute role="head">
+          <ProtectedRoute roles={['head', 'dept_head']}>
             <AdminLayout />
           </ProtectedRoute>
         }
       >
-        <Route index element={<AdminDashboard />} />
-        <Route path="leaves" element={<ReviewQueue title="Leaves Register" subtitle="All employee and department-head leave applications for Head review and export" />} />
+        <Route index element={<HeadHome />} />
+        <Route path="leaves" element={<ReviewQueue title="Leaves Register" subtitle="Employee leave applications routed to this Head for review and export" />} />
         <Route path="employees" element={<HeadEmployees />} />
-        <Route path="departments" element={<HeadDepartments />} />
         <Route path="calendar" element={<AdminCalendar />} />
       </Route>
 

@@ -1,5 +1,5 @@
-import { NavLink, Outlet, useLocation } from 'react-router-dom';
-import { FiHome, FiFileText, FiUsers, FiCalendar, FiLogOut, FiMenu, FiX, FiGrid } from 'react-icons/fi';
+import { NavLink, Outlet } from 'react-router-dom';
+import { FiHome, FiFileText, FiUsers, FiCalendar, FiLogOut, FiMenu, FiX } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useState } from 'react';
@@ -10,27 +10,32 @@ import { isSuperAdmin } from '../utils/roles';
 // Departments management is a global power — only the super admin gets that nav
 // entry. Scoped heads see only their own department's data on the other pages.
 const baseItems = [
-  { to: '/head', icon: FiHome, label: 'Dashboard', end: true },
+  { to: '/head', icon: FiHome, label: 'Dashboard', end: true, headOnly: true },
   { to: '/head/leaves', icon: FiFileText, label: 'Leave Requests' },
-  { to: '/head/employees', icon: FiUsers, label: 'Employees' },
-  { to: '/head/departments', icon: FiGrid, label: 'Departments', superAdminOnly: true },
-  { to: '/head/calendar', icon: FiCalendar, label: 'Calendar' },
+  { to: '/head/employees', icon: FiUsers, label: 'Employees', headOnly: true },
+  { to: '/head/calendar', icon: FiCalendar, label: 'Calendar', headOnly: true },
 ];
 
 export default function AdminLayout() {
   const { user, logout } = useAuth();
   const { theme, toggle } = useTheme();
   const [open, setOpen] = useState(false);
-  const { pathname } = useLocation();
   const superAdmin = isSuperAdmin(user);
-  const items = baseItems.filter((item) => !item.superAdminOnly || superAdmin);
+  const items = baseItems.filter((item) =>
+    (!item.superAdminOnly || superAdmin) && (!item.headOnly || user?.role === 'head')
+  );
+  const consoleLabel = user?.role === 'dept_head'
+    ? 'Department Head Console'
+    : superAdmin
+      ? 'Super Admin Console'
+      : 'Head Console';
 
   return (
     <div className="min-h-screen flex bg-background">
       {/* Sidebar - desktop */}
       <aside className="hidden lg:flex flex-col w-64 shrink-0 h-screen sticky top-0 border-r border-outline-variant/60 bg-surface-container-lowest">
         <div className="p-6 border-b border-outline-variant/30">
-          <BrandLogo subtitle={superAdmin ? 'Super Admin Console' : 'Head Console'} />
+          <BrandLogo subtitle={consoleLabel} />
         </div>
         <nav className="flex-1 p-4 space-y-1">
           {items.map(({ to, icon: Icon, label, end }) => (
@@ -66,7 +71,7 @@ export default function AdminLayout() {
             <button onClick={() => setOpen(false)} className="self-end p-2 rounded-full hover:bg-surface-container-low text-primary">
               <FiX />
             </button>
-            <BrandLogo subtitle={superAdmin ? 'Super Admin Console' : 'Head Console'} className="mt-2 mb-4" />
+            <BrandLogo subtitle={consoleLabel} className="mt-2 mb-4" />
             <nav className="space-y-1 mt-2">
               {items.map(({ to, icon: Icon, label, end }) => (
                 <NavLink
@@ -101,7 +106,9 @@ export default function AdminLayout() {
                 <FiMenu />
               </button>
               <div>
-                <p className="text-xs text-on-surface-variant/75 font-medium">{superAdmin ? 'Super Admin' : 'Head'}</p>
+                <p className="text-xs text-on-surface-variant/75 font-medium">
+                  {user?.role === 'dept_head' ? 'Department Head' : superAdmin ? 'Super Admin' : 'Head'}
+                </p>
                 <h2 className="text-lg font-bold">{user?.name}</h2>
               </div>
             </div>

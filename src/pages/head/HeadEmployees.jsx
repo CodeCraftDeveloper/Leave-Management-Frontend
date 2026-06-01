@@ -7,8 +7,6 @@ import {
   FiSearch,
   FiShield,
   FiTrash2,
-  FiUserMinus,
-  FiUserCheck,
   FiSend,
   FiUsers,
 } from 'react-icons/fi';
@@ -19,7 +17,6 @@ import { ListSkeleton } from '../../components/Skeleton';
 import Modal from '../../components/Modal';
 import {
   getTeam,
-  updateEmployeeRole,
   getWeeklyDigestPreview,
   listDepartments,
   setHeadsGroup,
@@ -28,7 +25,7 @@ import {
 import { createEmployee, deleteEmployee, updateEmployee } from '../../services/adminService';
 import { fmtDate } from '../../utils/format';
 import { useAuth } from '../../context/AuthContext';
-import { isSuperAdmin } from '../../utils/roles';
+import { isSuperAdmin, SUPERADMIN_EMAILS } from '../../utils/roles';
 
 const roleLabel = {
   employee: 'Employee',
@@ -72,13 +69,11 @@ export default function HeadEmployees() {
   const [headDirectory, setHeadDirectory] = useState([]);
   const [digest, setDigest] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [roleTarget, setRoleTarget] = useState(null);
   const [assignHeadTarget, setAssignHeadTarget] = useState(null);
   const [selectedHeadId, setSelectedHeadId] = useState('');
   const [employeeModal, setEmployeeModal] = useState(null);
   const [employeeForm, setEmployeeForm] = useState(emptyForm);
   const [deleteTarget, setDeleteTarget] = useState(null);
-  const [savingRole, setSavingRole] = useState(false);
   const [savingAssignedHead, setSavingAssignedHead] = useState(false);
   const [removingHeadId, setRemovingHeadId] = useState('');
   const [savingEmployee, setSavingEmployee] = useState(false);
@@ -111,20 +106,6 @@ export default function HeadEmployees() {
     load('');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const confirmRoleChange = async () => {
-    if (!roleTarget) return;
-    setSavingRole(true);
-    try {
-      const nextRole = roleTarget.employee.role === 'dept_head' ? 'employee' : 'dept_head';
-      const result = await updateEmployeeRole(roleTarget.employee._id, nextRole);
-      toast.success(result.message || 'Role updated');
-      setRoleTarget(null);
-      load(search);
-    } finally {
-      setSavingRole(false);
-    }
-  };
 
   const openAssignHead = ({ employee, department, approvalHeads }) => {
     if (!department) {
@@ -258,17 +239,26 @@ export default function HeadEmployees() {
     [data.items]
   );
 
-  const headAccounts = headDirectory;
+  const currentUserId = String(user?._id || '');
+  const headAccounts = headDirectory.filter((head) => {
+    const headId = String(head._id || '');
+    const emails = [head.email, head.notificationEmail].map((value) => String(value || '').toLowerCase());
+    const isSuperAdminHead = emails.some((email) => SUPERADMIN_EMAILS.includes(email));
+    return !isSuperAdminHead || headId === currentUserId;
+  });
 
   const verificationRows = useMemo(
     () => visibleEmployees.map((employee) => {
       const department = departmentByName.get(employee.department);
-      const heads = department?.heads || [];
       return {
         employee,
         department,
-        deptHeads: heads.filter((head) => head.role === 'dept_head'),
-        approvalHeads: heads.filter((head) => head.role === 'head'),
+        approvalEmails: employee.headNotificationEmails || [],
+        approvalHeads: (employee.headNotificationEmails || []).map((email) => ({
+          _id: email,
+          name: email,
+          email,
+        })),
       };
     }),
     [departmentByName, visibleEmployees]
@@ -276,7 +266,7 @@ export default function HeadEmployees() {
 
   const verificationCounts = useMemo(() => ({
     missingDepartment: verificationRows.filter((row) => !row.department).length,
-    missingHeads: verificationRows.filter((row) => row.deptHeads.length === 0 && row.approvalHeads.length === 0).length,
+    missingHeads: verificationRows.filter((row) => row.approvalEmails.length === 0).length,
   }), [verificationRows]);
 
   const departmentOptions = useMemo(
@@ -286,6 +276,7 @@ export default function HeadEmployees() {
 
   const headLabel = (head) => {
     const email = head.notificationEmail || head.email;
+    if (head.name === email) return email;
     return `${head.name}${head.employeeId ? ` (${head.employeeId})` : ''}${email ? ` - ${email}` : ''}`;
   };
 
@@ -293,7 +284,7 @@ export default function HeadEmployees() {
     <div className="space-y-5">
       <PageHeader
         title="Employees"
-        subtitle={`${data.total ?? data.items.length} active employees and department heads`}
+        subtitle={`${data.total ?? data.items.length} active employee and Head account records`}
         action={(
           <div className="flex flex-wrap justify-end gap-2">
             <button
@@ -454,7 +445,7 @@ export default function HeadEmployees() {
           )}
 
           <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-3">
-            {verificationRows.map(({ employee, department, deptHeads, approvalHeads }) => (
+            {verificationRows.map(({ employee, department, approvalHeads }) => (
               <article key={employee._id} className="card p-4 min-w-0">
                 <div className="flex items-start gap-3">
                   <div className="w-12 h-12 rounded-full bg-primary-container text-on-primary-container border border-outline-variant/50 grid place-items-center font-semibold shrink-0">
@@ -463,9 +454,6 @@ export default function HeadEmployees() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 min-w-0">
                       <p className="text-sm sm:text-base font-semibold truncate">{employee.name}</p>
-                      {employee.role === 'dept_head' && (
-                        <FiShield className="text-amber-500 shrink-0" title="Department Head" />
-                      )}
                     </div>
                     <p className="text-[11px] sm:text-xs text-on-surface-variant truncate">
                       {employee.employeeId} - {employee.department}
@@ -494,20 +482,6 @@ export default function HeadEmployees() {
                     </p>
                   </div>
                   <div>
-                    <p className="text-[11px] uppercase text-on-surface-variant">Department head</p>
-                    {deptHeads.length ? (
-                      <div className="mt-1 flex flex-wrap gap-1.5">
-                        {deptHeads.map((head) => (
-                          <span key={head._id} className="chip text-[11px] bg-amber-50 text-amber-800 border border-amber-200">
-                            {headLabel(head)}
-                          </span>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-xs text-on-surface-variant">No department head assigned</p>
-                    )}
-                  </div>
-                  <div>
                     <p className="text-[11px] uppercase text-on-surface-variant">Approval heads</p>
                     {approvalHeads.length ? (
                       <div className="mt-1 flex flex-wrap gap-1.5">
@@ -517,7 +491,7 @@ export default function HeadEmployees() {
                             className="chip text-[11px] bg-primary-container text-on-primary-container border border-outline-variant/30 pr-1"
                           >
                             <span>{headLabel(head)}</span>
-                            {superAdmin && (
+                            {false && (
                               <button
                                 type="button"
                                 onClick={() => removeApprovalHead({ department, approvalHeads, head })}
@@ -537,16 +511,8 @@ export default function HeadEmployees() {
                     )}
                   </div>
                 </div>
-                {superAdmin && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3">
-                    <button
-                      type="button"
-                      onClick={() => setRoleTarget({ employee })}
-                      className="btn-outline text-xs"
-                    >
-                      {employee.role === 'dept_head' ? <FiUserMinus /> : <FiUserCheck />}
-                      {employee.role === 'dept_head' ? 'Remove Department Head' : 'Make Department Head'}
-                    </button>
+                {false && (
+                  <div className="grid grid-cols-1 gap-2 mt-3">
                     <button
                       type="button"
                       onClick={() => openAssignHead({ employee, department, approvalHeads })}
@@ -578,28 +544,6 @@ export default function HeadEmployees() {
           </div>
         </>
       )}
-
-      <Modal
-        open={!!roleTarget}
-        onClose={() => setRoleTarget(null)}
-        title={roleTarget?.employee?.role === 'dept_head' ? 'Remove Department Head' : 'Assign Department Head'}
-        footer={(
-          <>
-            <button type="button" onClick={() => setRoleTarget(null)} className="btn-outline">
-              Cancel
-            </button>
-            <button type="button" onClick={confirmRoleChange} disabled={savingRole} className="btn-primary">
-              {savingRole ? 'Saving...' : 'Confirm'}
-            </button>
-          </>
-        )}
-      >
-        <p className="text-sm text-on-surface-variant">
-          {roleTarget?.employee?.role === 'dept_head'
-            ? `Remove ${roleTarget.employee.name} from department-head access?`
-            : `Make ${roleTarget?.employee?.name} the department head for ${roleTarget?.employee?.department}?`}
-        </p>
-      </Modal>
 
       <Modal
         open={!!assignHeadTarget}
@@ -692,7 +636,7 @@ export default function HeadEmployees() {
               onChange={(value) => updateForm('role', value)}
               options={[
                 { value: 'employee', label: 'Employee' },
-                { value: 'dept_head', label: 'Department Head' },
+                { value: 'dept_head', label: 'Department Head (listed only)' },
                 { value: 'head', label: 'Head' },
               ]}
             />

@@ -2,11 +2,9 @@ import {
   FiBell,
   FiCalendar,
   FiClock,
-  FiFileText,
   FiHome,
   FiPlusCircle,
   FiUser,
-  FiUsers,
 } from 'react-icons/fi';
 
 export const employeeNavItems = [
@@ -18,13 +16,4 @@ export const employeeNavItems = [
   { to: '/profile', icon: FiUser, materialIcon: 'person', label: 'Profile', mobileLabel: 'Profile' },
 ];
 
-export const departmentHeadNavItems = [
-  { to: '/manage/leaves', icon: FiFileText, materialIcon: 'fact_check', label: 'Requests', mobileLabel: 'Requests' },
-  { to: '/manage/team', icon: FiUsers, materialIcon: 'groups', label: 'My Department', mobileLabel: 'Team' },
-];
-
-export const getNavItemsForRole = (role) => (
-  role === 'dept_head'
-    ? [...employeeNavItems, ...departmentHeadNavItems]
-    : employeeNavItems
-);
+export const getNavItemsForRole = () => employeeNavItems;

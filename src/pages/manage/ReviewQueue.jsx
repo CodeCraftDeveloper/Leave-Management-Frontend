@@ -8,7 +8,6 @@ import { ListSkeleton } from '../../components/Skeleton';
 import Modal from '../../components/Modal';
 import { getReviewQueue, actionLeave, exportReviewQueueExcel } from '../../services/manageService';
 import { fmtDate, leaveTypeLabel, statusColors, leaveTypeColors } from '../../utils/format';
-import { useAuth } from '../../context/AuthContext';
 
 const statusOptions = ['pending', 'approved', 'rejected', 'all'];
 const typeOptions = ['all', 'leave'];
@@ -77,11 +76,11 @@ const activeFilterCount = (filters) => [
   Boolean(filters.search.trim()),
 ].filter(Boolean).length;
 
-// Shared queue used by both dept_heads (their team) and heads (dept_heads' leaves).
+// Shared queue for Head approval. The server scopes visible rows by each
+// employee's configured approval head email mapping.
 // The server scopes the visible rows automatically based on the caller's role,
 // so the component does not need to know which role it's rendering for.
 export default function ReviewQueue({ title = 'Leave Requests', subtitle }) {
-  const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const initialStatus = statusOptions.includes(searchParams.get('status')) ? searchParams.get('status') : 'all';
   const initialType = typeOptions.includes(searchParams.get('type')) ? searchParams.get('type') : 'all';
@@ -310,9 +309,6 @@ export default function ReviewQueue({ title = 'Leave Requests', subtitle }) {
                   <div className="flex flex-wrap gap-2 items-center">
                     <p className="text-sm sm:text-base font-semibold truncate">{l.employee?.name}</p>
                     <span className="text-xs text-on-surface-variant/60">· {l.employee?.employeeId}</span>
-                    {l.employee?.role === 'dept_head' && (
-                      <span className="chip text-[10px] bg-amber-100 text-amber-800 border border-amber-200">Dept Head</span>
-                    )}
                   </div>
                   <p className="text-xs text-on-surface-variant truncate">{l.employee?.department}</p>
                   <div className="flex flex-wrap gap-1.5 mt-2">
@@ -337,15 +333,6 @@ export default function ReviewQueue({ title = 'Leave Requests', subtitle }) {
                       <FiX /> Reject
                     </button>
                   </>
-                )}
-                {user?.role === 'head'
-                  && l.status === 'approved'
-                  && new Date(l.startDate) > new Date()
-                  && l.actionedBy
-                  && String(l.actionedBy) !== String(user._id) && (
-                  <button onClick={() => { setSelected(l); setAction('rejected'); setComment(''); setStaffingAlert(null); }} className="btn bg-rose-500 text-white flex-1 gap-1 px-2 text-xs sm:gap-2 sm:px-4 sm:text-sm">
-                    <FiX /> Overturn
-                  </button>
                 )}
               </div>
             </div>
@@ -393,9 +380,7 @@ export default function ReviewQueue({ title = 'Leave Requests', subtitle }) {
         onClose={() => { setAction(null); setComment(''); setStaffingAlert(null); }}
         title={action === 'approved'
           ? 'Approve Leave'
-          : selected?.status === 'approved'
-            ? 'Overturn Approval'
-            : 'Reject Leave'}
+          : 'Reject Leave'}
         footer={
           <>
             <button onClick={() => { setAction(null); setComment(''); setStaffingAlert(null); }} className="btn-outline">Cancel</button>
@@ -411,9 +396,7 @@ export default function ReviewQueue({ title = 'Leave Requests', subtitle }) {
         <p className="text-sm text-on-surface-variant mb-3">
           {action === 'approved'
             ? 'Approve'
-            : selected?.status === 'approved'
-              ? 'Overturn the approval of'
-              : 'Reject'} this leave for <b>{selected?.employee?.name}</b>?
+            : 'Reject'} this leave for <b>{selected?.employee?.name}</b>?
         </p>
         {staffingAlert && <StaffingAlert coverage={staffingAlert} />}
         <label className="label">

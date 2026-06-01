@@ -33,7 +33,7 @@ export default function AdminDashboard() {
     ? Math.max(1, ...data.monthly.map((m) => m.pending + m.approved + m.rejected))
     : 1;
   const departmentScope = formatDepartmentScope(data?.scope?.departments, user?.department);
-  const dashboardTitle = superAdmin ? 'Super Admin Dashboard' : 'Department Head Dashboard';
+  const dashboardTitle = superAdmin ? 'Super Admin Dashboard' : 'Head Dashboard';
   const dashboardSubtitle = superAdmin
     ? 'Overview of leave activity across all departments'
     : `Overview of leave activity for ${departmentScope}`;
@@ -69,7 +69,7 @@ export default function AdminDashboard() {
           icon={FiUsers}
           title={superAdmin ? 'Manage department heads' : 'Manage employees'}
           description={superAdmin
-            ? 'Assign department-head access and review active staff.'
+            ? 'Manage employees, Head accounts, and approval email routing.'
             : `Add, edit, and review staff assigned to ${departmentScope}.`}
         />
         <WorkspaceLink
