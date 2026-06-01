@@ -22,7 +22,7 @@ import {
   setHeadsGroup,
   sendWeeklyDigestNow,
 } from '../../services/manageService';
-import { createEmployee, deleteEmployee, updateEmployee } from '../../services/adminService';
+import { createEmployee, deleteEmployee, updateEmployee, listHeads } from '../../services/adminService';
 import { fmtDate } from '../../utils/format';
 import { useAuth } from '../../context/AuthContext';
 import { isSuperAdmin, SUPERADMIN_EMAILS } from '../../utils/roles';
@@ -43,6 +43,7 @@ const emptyForm = {
   joiningDate: '',
   password: '',
   role: 'employee',
+  headNotificationEmails: [],
 };
 
 const toEmployeeForm = (employee) => ({
@@ -55,7 +56,15 @@ const toEmployeeForm = (employee) => ({
   joiningDate: employee.joiningDate ? employee.joiningDate.slice(0, 10) : '',
   password: '',
   role: employee.role || 'employee',
+  headNotificationEmails: (employee.headNotificationEmails || []).map((email) =>
+    String(email || '').toLowerCase()
+  ),
 });
+
+// The login email or seeded notification email used to route this Head's
+// approvals — stored on the employee's headNotificationEmails.
+const headEmailValue = (head) =>
+  String(head?.notificationEmail || head?.email || '').toLowerCase();
 
 const requiredFields = ['employeeId', 'name', 'department', 'designation'];
 
@@ -89,14 +98,16 @@ export default function HeadEmployees() {
         includeHeads: superAdmin ? true : undefined,
       }),
       listDepartments(),
-      superAdmin ? getTeam({ includeHeads: true }).catch(() => ({ items: [] })) : Promise.resolve({ items: [] }),
+      // Head directory powers the reporting-head selector; available to every
+      // head (the super admin included), not just the super admin.
+      listHeads().catch(() => ({ items: [] })),
       // Weekly digest is a super-admin-only global view.
       superAdmin ? getWeeklyDigestPreview().catch(() => null) : Promise.resolve(null),
     ])
       .then(([team, departmentList, headList, digestPreview]) => {
         setData(team);
         setDepartments(departmentList.items || []);
-        setHeadDirectory((headList.items || []).filter((employee) => employee.role === 'head'));
+        setHeadDirectory(headList.items || []);
         setDigest(digestPreview);
       })
       .finally(() => setLoading(false));
@@ -177,6 +188,16 @@ export default function HeadEmployees() {
     setEmployeeForm((current) => ({ ...current, [field]: value }));
   };
 
+  const toggleReportingHead = (email) => {
+    if (!email) return;
+    setEmployeeForm((current) => {
+      const selected = new Set(current.headNotificationEmails);
+      if (selected.has(email)) selected.delete(email);
+      else selected.add(email);
+      return { ...current, headNotificationEmails: [...selected] };
+    });
+  };
+
   const submitEmployee = async () => {
     const missing = requiredFields.find((field) => !employeeForm[field].trim());
     if (missing) {
@@ -190,6 +211,7 @@ export default function HeadEmployees() {
 
     setSavingEmployee(true);
     try {
+      const isHeadAccount = (superAdmin ? employeeForm.role : employeeModal?.employee?.role) === 'head';
       const payload = {
         employeeId: employeeForm.employeeId,
         name: employeeForm.name,
@@ -199,6 +221,9 @@ export default function HeadEmployees() {
         designation: employeeForm.designation,
         joiningDate: employeeForm.joiningDate || undefined,
         role: superAdmin ? employeeForm.role : undefined,
+        // Reporting heads only apply to staff who route leave for approval; a
+        // Head account is itself an approver, so don't send the field for them.
+        ...(isHeadAccount ? {} : { headNotificationEmails: employeeForm.headNotificationEmails }),
       };
       if (employeeModal.mode === 'create') {
         await createEmployee({ ...payload, password: employeeForm.password });
@@ -657,6 +682,52 @@ export default function HeadEmployees() {
             <Field label="Temporary Password" type="password" value={employeeForm.password} onChange={(value) => updateForm('password', value)} />
           )}
         </div>
+
+        {(superAdmin ? employeeForm.role : employeeModal?.employee?.role) !== 'head' && (
+          <div className="mt-4">
+            <span className="label">Reporting Head(s) for leave approval</span>
+            <p className="text-xs text-on-surface-variant mb-2">
+              Select the Head(s) who receive and approve this employee&apos;s leave requests.
+            </p>
+            <div className="max-h-48 overflow-auto rounded-lg border border-outline-variant/50 divide-y divide-outline-variant/30">
+              {headDirectory.length === 0 ? (
+                <p className="text-xs text-on-surface-variant p-3">No Head accounts available to assign.</p>
+              ) : (
+                headDirectory.map((head) => {
+                  const value = headEmailValue(head);
+                  const checked = employeeForm.headNotificationEmails.includes(value);
+                  return (
+                    <label
+                      key={head._id}
+                      className={`flex items-center gap-2.5 p-2.5 text-sm cursor-pointer hover:bg-surface-container-low ${value ? '' : 'opacity-50 cursor-not-allowed'}`}
+                    >
+                      <input
+                        type="checkbox"
+                        className="accent-primary w-4 h-4 shrink-0"
+                        checked={checked}
+                        disabled={!value}
+                        onChange={() => toggleReportingHead(value)}
+                      />
+                      <span className="min-w-0">
+                        <span className="font-medium">{head.name}</span>
+                        {head.employeeId && (
+                          <span className="text-on-surface-variant"> ({head.employeeId})</span>
+                        )}
+                        <span className="text-on-surface-variant"> — {value || 'no routing email'}</span>
+                      </span>
+                    </label>
+                  );
+                })
+              )}
+            </div>
+            {employeeForm.headNotificationEmails.length === 0 && (
+              <p className="mt-1.5 text-xs text-amber-600">
+                No reporting head assigned — this employee&apos;s leave requests won&apos;t route to anyone.
+              </p>
+            )}
+          </div>
+        )}
+
         {employeeModal?.mode === 'edit' && (
           <p className="mt-3 text-xs text-on-surface-variant">
             Password changes stay with the employee profile flow. Editing email will require the employee to verify the new address.

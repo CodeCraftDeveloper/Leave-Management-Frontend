@@ -15,6 +15,7 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminCalendar from './pages/admin/AdminCalendar';
 import ReviewQueue from './pages/manage/ReviewQueue';
 import HeadEmployees from './pages/head/HeadEmployees';
+import { REVIEW_QUEUE_EMPLOYEE_IDS } from './components/navigationItems';
 
 export default function App() {
   return (
@@ -36,10 +37,17 @@ export default function App() {
         <Route path="calendar" element={<CalendarPage />} />
         <Route path="notifications" element={<Notifications />} />
         <Route path="profile" element={<Profile />} />
-        {/* Department heads are hybrid (they apply for their own leave and review
-            their team's), so their review queue lives inside the employee portal
-            to keep the full sidebar instead of the sparse head console. */}
-        <Route path="review" element={<ReviewQueue title="Leaves Register" subtitle="Leave applications routed to you for review and export" />} />
+        {/* The review queue lives inside the employee portal (full sidebar) but is
+            restricted to the two department heads who action requests — Shikhar
+            (H641) and Praveen (H317). Everyone else is bounced back to '/'. */}
+        <Route
+          path="review"
+          element={
+            <ProtectedRoute employeeIds={REVIEW_QUEUE_EMPLOYEE_IDS}>
+              <ReviewQueue title="Leaves Register" subtitle="Leave applications routed to you for review and export" />
+            </ProtectedRoute>
+          }
+        />
       </Route>
 
       <Route

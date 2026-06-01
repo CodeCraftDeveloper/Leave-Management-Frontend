@@ -2,14 +2,14 @@ import { useEffect, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { getNotifications } from '../services/notificationService';
 import { useAuth } from '../context/AuthContext';
-import { getNavItemsForRole } from './navigationItems';
+import { getNavItemsForUser } from './navigationItems';
 
 export default function BottomNav() {
   const { pathname } = useLocation();
   const { user } = useAuth();
   const [unread, setUnread] = useState(0);
   const [moreOpen, setMoreOpen] = useState(false);
-  const allItems = getNavItemsForRole(user?.role);
+  const allItems = getNavItemsForUser(user);
   const primaryItems = allItems.filter((item) => ['/', '/apply', '/calendar', '/notifications', '/profile'].includes(item.to));
   const overflowItems = [];
   const moreActive = overflowItems.some((item) => pathname === item.to || pathname.startsWith(`${item.to}/`));

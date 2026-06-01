@@ -2,12 +2,12 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { FiLogOut } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
 import BrandLogo from './BrandLogo';
-import { getNavItemsForRole, isNavItemActive } from './navigationItems';
+import { getNavItemsForUser, isNavItemActive } from './navigationItems';
 
 export default function Sidebar() {
   const { user, logout } = useAuth();
   const location = useLocation();
-  const items = getNavItemsForRole(user?.role);
+  const items = getNavItemsForUser(user);
   return (
     <aside className="hidden lg:flex flex-col w-64 shrink-0 h-screen sticky top-0 border-r border-outline-variant/60 bg-surface-container-lowest">
       <div className="p-6 border-b border-outline-variant/30">

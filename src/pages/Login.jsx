@@ -6,6 +6,7 @@ import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import BrandLogo from '../components/BrandLogo';
+import { canReviewLeaveRequests } from '../components/navigationItems';
 
 export default function Login() {
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm();
@@ -23,7 +24,7 @@ export default function Login() {
         navigate(`${from.pathname}${from.search || ''}`, { replace: true });
       } else if (user.role === 'head') {
         navigate('/head', { replace: true });
-      } else if (user.role === 'dept_head') {
+      } else if (canReviewLeaveRequests(user)) {
         navigate('/review', { replace: true });
       } else {
         navigate('/', { replace: true });

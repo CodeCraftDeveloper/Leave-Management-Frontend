@@ -5,11 +5,10 @@ import LoadingScreen from '../components/LoadingScreen';
 // Where to send each role when they hit a route they cannot access.
 const defaultHomeFor = (role) => {
   if (role === 'head') return '/head';
-  if (role === 'dept_head') return '/review';
   return '/';
 };
 
-const ProtectedRoute = ({ children, role, roles }) => {
+const ProtectedRoute = ({ children, role, roles, employeeIds }) => {
   const { user, loading } = useAuth();
   const location = useLocation();
 
@@ -22,6 +21,16 @@ const ProtectedRoute = ({ children, role, roles }) => {
   if (allowed && !allowed.includes(user.role)) {
     return <Navigate to={defaultHomeFor(user.role)} replace />;
   }
+
+  // Optional per-employee allowlist (e.g. the Leave Requests review queue is
+  // limited to the two department heads who action requests).
+  if (
+    employeeIds &&
+    !employeeIds.includes(String(user.employeeId || '').toUpperCase())
+  ) {
+    return <Navigate to={defaultHomeFor(user.role)} replace />;
+  }
+
   return children;
 };
 
