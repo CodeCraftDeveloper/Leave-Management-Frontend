@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { FiSearch, FiCheck, FiX, FiAlertCircle, FiDownload, FiFilter, FiCalendar } from 'react-icons/fi';
+import { FiSearch, FiCheck, FiX, FiAlertCircle, FiDownload, FiFilter, FiCalendar, FiRotateCcw } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import PageHeader from '../../components/PageHeader';
 import EmptyState from '../../components/EmptyState';
 import { ListSkeleton } from '../../components/Skeleton';
 import Modal from '../../components/Modal';
-import { getReviewQueue, actionLeave, exportReviewQueueExcel } from '../../services/manageService';
+import { getReviewQueue, actionLeave, cancelLeaveByHead, exportReviewQueueExcel } from '../../services/manageService';
 import { fmtDate, leaveTypeLabel, statusColors, leaveTypeColors } from '../../utils/format';
 
 const statusOptions = ['pending', 'approved', 'rejected', 'all'];
@@ -138,6 +138,20 @@ export default function ReviewQueue({ title = 'Leave Requests', subtitle }) {
   };
 
   const submitAction = async () => {
+    if (action === 'cancelled') {
+      try {
+        await cancelLeaveByHead(selected._id, { adminComment: comment.trim() });
+        toast.success('Leave cancelled');
+        setSelected(null);
+        setAction(null);
+        setComment('');
+        setStaffingAlert(null);
+        load();
+      } catch {
+        // The API interceptor already surfaces the failure reason.
+      }
+      return;
+    }
     const isStaffingOverride = action === 'approved' && !!staffingAlert;
     if (isStaffingOverride && !comment.trim()) {
       toast.error('Enter an override reason before approving this leave');
@@ -334,6 +348,11 @@ export default function ReviewQueue({ title = 'Leave Requests', subtitle }) {
                     </button>
                   </>
                 )}
+                {l.status === 'approved' && (
+                  <button onClick={() => { setSelected(l); setAction('cancelled'); setComment(''); setStaffingAlert(null); }} className="btn bg-amber-500 text-white flex-1 gap-1 px-2 text-xs sm:gap-2 sm:px-4 sm:text-sm">
+                    <FiRotateCcw /> Cancel
+                  </button>
+                )}
               </div>
             </div>
           ))}
@@ -380,15 +399,17 @@ export default function ReviewQueue({ title = 'Leave Requests', subtitle }) {
         onClose={() => { setAction(null); setComment(''); setStaffingAlert(null); }}
         title={action === 'approved'
           ? 'Approve Leave'
-          : 'Reject Leave'}
+          : action === 'cancelled'
+            ? 'Cancel Approved Leave'
+            : 'Reject Leave'}
         footer={
           <>
-            <button onClick={() => { setAction(null); setComment(''); setStaffingAlert(null); }} className="btn-outline">Cancel</button>
+            <button onClick={() => { setAction(null); setComment(''); setStaffingAlert(null); }} className="btn-outline">Close</button>
             <button
               onClick={submitAction}
-              className={`btn text-white ${action === 'approved' ? 'bg-emerald-500' : 'bg-rose-500'}`}
+              className={`btn text-white ${action === 'approved' ? 'bg-emerald-500' : action === 'cancelled' ? 'bg-amber-500' : 'bg-rose-500'}`}
             >
-              {staffingAlert ? 'Override & Approve' : 'Confirm'}
+              {staffingAlert ? 'Override & Approve' : action === 'cancelled' ? 'Confirm Cancellation' : 'Confirm'}
             </button>
           </>
         }
@@ -396,18 +417,29 @@ export default function ReviewQueue({ title = 'Leave Requests', subtitle }) {
         <p className="text-sm text-on-surface-variant mb-3">
           {action === 'approved'
             ? 'Approve'
-            : 'Reject'} this leave for <b>{selected?.employee?.name}</b>?
+            : action === 'cancelled'
+              ? 'Cancel this previously approved leave for'
+              : 'Reject'} {action === 'cancelled' ? '' : 'this leave for '}<b>{selected?.employee?.name}</b>?
         </p>
+        {action === 'cancelled' && (
+          <p className="text-xs text-amber-700 dark:text-amber-300 mb-3">
+            The employee and the original approver will be notified, and the leave's attendance entries will be removed.
+          </p>
+        )}
         {staffingAlert && <StaffingAlert coverage={staffingAlert} />}
         <label className="label">
-          {staffingAlert ? 'Override reason (required)' : 'Comment (optional)'}
+          {staffingAlert
+            ? 'Override reason (required)'
+            : action === 'cancelled'
+              ? 'Reason for cancellation (optional)'
+              : 'Comment (optional)'}
         </label>
         <textarea
           rows={3}
           value={comment}
           onChange={(e) => setComment(e.target.value)}
           className="input"
-          placeholder={staffingAlert ? 'Explain why coverage can be overridden...' : 'Add a note for the employee...'}
+          placeholder={staffingAlert ? 'Explain why coverage can be overridden...' : action === 'cancelled' ? 'Explain why this leave is being cancelled...' : 'Add a note for the employee...'}
         />
       </Modal>
     </div>

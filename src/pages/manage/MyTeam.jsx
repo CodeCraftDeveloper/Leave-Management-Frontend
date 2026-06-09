@@ -1,30 +1,24 @@
 import { useEffect, useState } from 'react';
-import { FiMail, FiSearch, FiShield } from 'react-icons/fi';
+import { FiMail, FiSearch } from 'react-icons/fi';
 import PageHeader from '../../components/PageHeader';
 import EmptyState from '../../components/EmptyState';
 import { ListSkeleton } from '../../components/Skeleton';
 import { getTeam } from '../../services/manageService';
-import { useAuth } from '../../context/AuthContext';
 
 const roleLabel = {
   employee: 'Employee',
-  dept_head: 'Department Head',
   head: 'Head',
   hr: 'HR',
 };
 
 export default function MyTeam() {
-  const { user } = useAuth();
   const [search, setSearch] = useState('');
   const [data, setData] = useState({ items: [] });
   const [loading, setLoading] = useState(true);
 
   const load = (q = search) => {
     setLoading(true);
-    getTeam({
-      search: q || undefined,
-      includeSelf: user?.role === 'dept_head' ? 'true' : undefined,
-    })
+    getTeam({ search: q || undefined })
       .then(setData)
       .finally(() => setLoading(false));
   };
@@ -37,10 +31,8 @@ export default function MyTeam() {
   return (
     <div className="space-y-5">
       <PageHeader
-        title={user?.role === 'dept_head' ? 'My Department' : 'Employees'}
-        subtitle={user?.role === 'dept_head'
-          ? 'People in your department, including your own profile'
-          : 'Active employee directory'}
+        title="Employees"
+        subtitle="Active employee directory"
       />
 
       <form
@@ -74,9 +66,6 @@ export default function MyTeam() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 min-w-0">
                     <p className="text-sm sm:text-base font-semibold truncate">{employee.name}</p>
-                    {employee.role === 'dept_head' && (
-                      <FiShield className="text-amber-500 shrink-0" title="Department Head" />
-                    )}
                   </div>
                   <p className="text-[11px] sm:text-xs text-on-surface-variant truncate">
                     {employee.employeeId} - {employee.department}

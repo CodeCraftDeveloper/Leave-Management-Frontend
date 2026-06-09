@@ -15,7 +15,7 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminCalendar from './pages/admin/AdminCalendar';
 import ReviewQueue from './pages/manage/ReviewQueue';
 import HeadEmployees from './pages/head/HeadEmployees';
-import { REVIEW_QUEUE_EMPLOYEE_IDS } from './components/navigationItems';
+import HeadProfile from './pages/head/HeadProfile';
 
 export default function App() {
   return (
@@ -26,7 +26,7 @@ export default function App() {
       <Route
         path="/"
         element={
-          <ProtectedRoute roles={['employee', 'dept_head']}>
+          <ProtectedRoute roles={['employee']}>
             <MainLayout />
           </ProtectedRoute>
         }
@@ -37,17 +37,6 @@ export default function App() {
         <Route path="calendar" element={<CalendarPage />} />
         <Route path="notifications" element={<Notifications />} />
         <Route path="profile" element={<Profile />} />
-        {/* The review queue lives inside the employee portal (full sidebar) but is
-            restricted to the two department heads who action requests — Shikhar
-            (H641) and Praveen (H317). Everyone else is bounced back to '/'. */}
-        <Route
-          path="review"
-          element={
-            <ProtectedRoute employeeIds={REVIEW_QUEUE_EMPLOYEE_IDS}>
-              <ReviewQueue title="Leaves Register" subtitle="Leave applications routed to you for review and export" />
-            </ProtectedRoute>
-          }
-        />
       </Route>
 
       <Route
@@ -62,6 +51,7 @@ export default function App() {
         <Route path="leaves" element={<ReviewQueue title="Leaves Register" subtitle="Employee leave applications routed to this Head for review and export" />} />
         <Route path="employees" element={<HeadEmployees />} />
         <Route path="calendar" element={<AdminCalendar />} />
+        <Route path="profile" element={<HeadProfile />} />
       </Route>
 
       <Route path="/admin" element={<Navigate to="/head" replace />} />

@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom';
-import { FiHome, FiFileText, FiUsers, FiCalendar, FiLogOut, FiMenu, FiX } from 'react-icons/fi';
+import { FiHome, FiFileText, FiUsers, FiCalendar, FiUser, FiLogOut, FiMenu, FiX } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useState } from 'react';
@@ -14,6 +14,8 @@ const baseItems = [
   { to: '/head/leaves', icon: FiFileText, label: 'Leave Requests' },
   { to: '/head/employees', icon: FiUsers, label: 'Employees', headOnly: true },
   { to: '/head/calendar', icon: FiCalendar, label: 'Calendar', headOnly: true },
+  // Available to every console user so heads can change their own password.
+  { to: '/head/profile', icon: FiUser, label: 'Profile' },
 ];
 
 export default function AdminLayout() {
@@ -24,11 +26,7 @@ export default function AdminLayout() {
   const items = baseItems.filter((item) =>
     (!item.superAdminOnly || superAdmin) && (!item.headOnly || user?.role === 'head')
   );
-  const consoleLabel = user?.role === 'dept_head'
-    ? 'Department Head Console'
-    : superAdmin
-      ? 'Super Admin Console'
-      : 'Head Console';
+  const consoleLabel = superAdmin ? 'Super Admin Console' : 'Head Console';
 
   return (
     <div className="min-h-screen flex bg-background">
@@ -107,7 +105,7 @@ export default function AdminLayout() {
               </button>
               <div>
                 <p className="text-xs text-on-surface-variant/75 font-medium">
-                  {user?.role === 'dept_head' ? 'Department Head' : superAdmin ? 'Super Admin' : 'Head'}
+                  {superAdmin ? 'Super Admin' : 'Head'}
                 </p>
                 <h2 className="text-lg font-bold">{user?.name}</h2>
               </div>

@@ -24,11 +24,11 @@ export const exportReviewQueueExcel = async (params = {}) => {
 export const actionLeave = (id, payload) =>
   api.patch(`/manage/leaves/${id}`, payload).then((r) => r.data);
 
+export const cancelLeaveByHead = (id, payload) =>
+  api.patch(`/manage/leaves/${id}/cancel`, payload).then((r) => r.data);
+
 export const getTeam = (params) =>
   api.get('/manage/team', { params }).then((r) => r.data);
-
-export const updateEmployeeRole = (id, role) =>
-  api.patch(`/manage/employees/${id}/role`, { role }).then((r) => r.data);
 
 export const getWeeklyDigestPreview = () =>
   api.get('/manage/weekly-digest').then((r) => r.data);
@@ -59,9 +59,6 @@ export const addDepartmentMember = (id, employeeId) =>
 
 export const removeDepartmentMember = (id, employeeId) =>
   api.delete(`/manage/departments/${id}/members/${employeeId}`).then((r) => r.data);
-
-export const setDepartmentHead = (id, employeeId) =>
-  api.patch(`/manage/departments/${id}/department-head`, { employeeId }).then((r) => r.data);
 
 export const setHeadsGroup = (id, employeeIds) =>
   api.patch(`/manage/departments/${id}/heads-group`, { employeeIds }).then((r) => r.data);

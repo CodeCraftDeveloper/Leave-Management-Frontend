@@ -67,7 +67,7 @@ export default function AdminDashboard() {
         <WorkspaceLink
           to="/head/employees"
           icon={FiUsers}
-          title={superAdmin ? 'Manage department heads' : 'Manage employees'}
+          title={superAdmin ? 'Manage Heads' : 'Manage employees'}
           description={superAdmin
             ? 'Manage employees, Head accounts, and approval email routing.'
             : `Add, edit, and review staff assigned to ${departmentScope}.`}

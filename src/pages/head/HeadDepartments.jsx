@@ -5,7 +5,6 @@ import {
   FiPlus,
   FiSearch,
   FiShield,
-  FiStar,
   FiUserPlus,
   FiUsers,
   FiX,
@@ -23,7 +22,6 @@ import {
   deleteDepartment,
   addDepartmentMember,
   removeDepartmentMember,
-  setDepartmentHead,
   setHeadsGroup,
   createEmployee,
   getTeam,
@@ -40,7 +38,6 @@ const toForm = (department) => ({
 const splitHeads = (department) => {
   const heads = department.heads || [];
   return {
-    deptHead: heads.find((h) => h.role === 'dept_head') || null,
     overallHeads: heads.filter((h) => h.role === 'head'),
   };
 };
@@ -141,7 +138,7 @@ export default function HeadDepartments() {
     <div className="space-y-5">
       <PageHeader
         title="Departments"
-        subtitle="Create departments, manage members, and assign the department head and Heads group"
+        subtitle="Create departments, manage members, and assign Heads"
         action={(
           <button type="button" onClick={openCreate} className="btn-primary gap-2 text-sm">
             <FiPlus /> New department
@@ -172,11 +169,11 @@ export default function HeadDepartments() {
       {loading ? (
         <ListSkeleton count={4} />
       ) : filtered.length === 0 ? (
-        <EmptyState title="No departments" subtitle="Create one to assign a department head" />
+        <EmptyState title="No departments" subtitle="Create one to assign Heads" />
       ) : (
         <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-3">
           {filtered.map((department) => {
-            const { deptHead, overallHeads } = splitHeads(department);
+            const { overallHeads } = splitHeads(department);
             return (
               <article key={department._id} className={`card p-4 min-w-0 ${department.active ? '' : 'opacity-60'}`}>
                 <div className="flex items-start justify-between gap-2">
@@ -228,20 +225,6 @@ export default function HeadDepartments() {
                 </div>
 
                 <div className="mt-3 space-y-2">
-                  <div>
-                    <p className="text-[11px] uppercase tracking-wide text-on-surface-variant/75 mb-1">
-                      Department head
-                    </p>
-                    {deptHead ? (
-                      <div className="flex items-center gap-2 text-xs">
-                        <FiStar className="text-amber-500 shrink-0" />
-                        <span className="truncate">{deptHead.name}</span>
-                        <span className="text-on-surface-variant/60 shrink-0">· {deptHead.employeeId}</span>
-                      </div>
-                    ) : (
-                      <p className="text-xs text-rose-500">No head assigned</p>
-                    )}
-                  </div>
                   <div>
                     <p className="text-[11px] uppercase tracking-wide text-on-surface-variant/75 mb-1">
                       Heads (overall)
@@ -319,8 +302,7 @@ export default function HeadDepartments() {
             />
           </label>
           <p className="text-xs text-on-surface-variant">
-            After saving, use <b>Manage members &amp; heads</b> to add employees and assign the
-            department head and Heads group.
+            After saving, use <b>Manage members &amp; heads</b> to add employees and assign Heads.
           </p>
         </div>
       </Modal>
@@ -392,7 +374,6 @@ function ManageDepartmentModal({ department, onClose, onChanged }) {
 
   const members = detail?.members || [];
   const available = detail?.availableEmployees || [];
-  const deptHead = detail?.departmentHead || null;
   const headGroup = detail?.headGroup || [];
   const headGroupIds = headGroup.map((h) => h._id);
 
@@ -402,44 +383,6 @@ function ManageDepartmentModal({ department, onClose, onChanged }) {
         <ListSkeleton count={4} />
       ) : (
         <div className="space-y-6">
-          {/* Department head (single) */}
-          <section>
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold flex items-center gap-2">
-                <FiStar className="text-amber-500" /> Department head
-              </h3>
-              {deptHead && (
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => run(() => setDepartmentHead(department._id, null), 'Department head cleared')}
-                  className="text-xs text-rose-500 hover:underline"
-                >
-                  Clear
-                </button>
-              )}
-            </div>
-            <p className="text-xs text-on-surface-variant mt-0.5 mb-2">
-              Exactly one local head — approves their team&apos;s leaves. Choosing a new one replaces the old.
-            </p>
-            {deptHead ? (
-              <div className="chip bg-amber-50 text-amber-700 border border-amber-200 text-xs">
-                {deptHead.name} · {deptHead.employeeId}
-              </div>
-            ) : (
-              <p className="text-xs text-rose-500 mb-2">No department head assigned</p>
-            )}
-            <PeoplePicker
-              placeholder="Search members to set as department head..."
-              people={members.filter((m) => m.role !== 'dept_head')}
-              disabled={busy}
-              onPick={(emp) => run(
-                () => setDepartmentHead(department._id, emp._id),
-                `${emp.name} is now the department head`,
-              )}
-            />
-          </section>
-
           {/* Overall heads group */}
           <section>
             <h3 className="text-sm font-semibold flex items-center gap-2">
@@ -493,9 +436,6 @@ function ManageDepartmentModal({ department, onClose, onChanged }) {
                   <li key={emp._id} className="flex items-center gap-2 p-2">
                     <span className="text-sm truncate">{emp.name}</span>
                     <span className="text-[11px] text-on-surface-variant/60 truncate">· {emp.employeeId}</span>
-                    {emp.role === 'dept_head' && (
-                      <span className="chip text-[10px] bg-amber-50 text-amber-700 border border-amber-200">Head</span>
-                    )}
                     <button
                       type="button"
                       disabled={busy}

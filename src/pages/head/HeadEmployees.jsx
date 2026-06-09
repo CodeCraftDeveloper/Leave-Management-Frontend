@@ -29,7 +29,6 @@ import { isSuperAdmin, SUPERADMIN_EMAILS } from '../../utils/roles';
 
 const roleLabel = {
   employee: 'Employee',
-  dept_head: 'Department Head',
   head: 'Head',
 };
 
@@ -661,7 +660,6 @@ export default function HeadEmployees() {
               onChange={(value) => updateForm('role', value)}
               options={[
                 { value: 'employee', label: 'Employee' },
-                { value: 'dept_head', label: 'Department Head (listed only)' },
                 { value: 'head', label: 'Head' },
               ]}
             />

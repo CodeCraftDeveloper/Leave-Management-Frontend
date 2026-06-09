@@ -22,8 +22,7 @@ const ProtectedRoute = ({ children, role, roles, employeeIds }) => {
     return <Navigate to={defaultHomeFor(user.role)} replace />;
   }
 
-  // Optional per-employee allowlist (e.g. the Leave Requests review queue is
-  // limited to the two department heads who action requests).
+  // Optional per-employee allowlist.
   if (
     employeeIds &&
     !employeeIds.includes(String(user.employeeId || '').toUpperCase())
