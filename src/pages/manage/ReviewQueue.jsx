@@ -7,7 +7,7 @@ import EmptyState from '../../components/EmptyState';
 import { ListSkeleton } from '../../components/Skeleton';
 import Modal from '../../components/Modal';
 import { getReviewQueue, actionLeave, cancelLeaveByHead, exportReviewQueueExcel } from '../../services/manageService';
-import { fmtDate, leaveTypeLabel, statusColors, leaveTypeColors } from '../../utils/format';
+import { fmtDate, isPastLeave, leaveTypeLabel, statusColors, leaveTypeColors } from '../../utils/format';
 
 const statusOptions = ['pending', 'approved', 'rejected', 'all'];
 const typeOptions = ['all', 'leave'];
@@ -138,6 +138,11 @@ export default function ReviewQueue({ title = 'Leave Requests', subtitle }) {
   };
 
   const submitAction = async () => {
+    if (action === 'cancelled' && isPastLeave(selected)) {
+      toast.error('Approved leaves cannot be changed after the leave date has passed');
+      return;
+    }
+
     if (action === 'cancelled') {
       try {
         await cancelLeaveByHead(selected._id, { adminComment: comment.trim() });
@@ -348,7 +353,7 @@ export default function ReviewQueue({ title = 'Leave Requests', subtitle }) {
                     </button>
                   </>
                 )}
-                {l.status === 'approved' && (
+                {l.status === 'approved' && !isPastLeave(l) && (
                   <button onClick={() => { setSelected(l); setAction('cancelled'); setComment(''); setStaffingAlert(null); }} className="btn bg-amber-500 text-white flex-1 gap-1 px-2 text-xs sm:gap-2 sm:px-4 sm:text-sm">
                     <FiRotateCcw /> Cancel
                   </button>

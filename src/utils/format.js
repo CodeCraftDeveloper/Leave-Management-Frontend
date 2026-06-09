@@ -8,6 +8,17 @@ export const fmtDate = (d, p = 'dd MMM yyyy') => {
 
 export const fmtDateShort = (d) => fmtDate(d, 'dd MMM');
 
+const startOfLocalDay = (value = new Date()) => {
+  const date = value instanceof Date ? new Date(value) : parseISO(value);
+  date.setHours(0, 0, 0, 0);
+  return date;
+};
+
+export const isPastLeave = (leave) => {
+  if (!leave?.endDate) return false;
+  return startOfLocalDay(leave.endDate) < startOfLocalDay();
+};
+
 export const leaveTypeLabel = {
   leave: 'Leave',
   casual: 'Casual',
