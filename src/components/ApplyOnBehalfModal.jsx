@@ -58,12 +58,12 @@ export default function ApplyOnBehalfModal({ open, onClose, employee, onSuccess 
   const totalDays = useMemo(() => {
     if (!startDate || !endDate) return 0;
     if (isHalfDay) {
-      const count = calculateDays(startDate, startDate, holidays);
+      const count = calculateDays(startDate, startDate, holidays, { employee });
       return count > 0 ? 0.5 : 0;
     }
-    const count = calculateDays(startDate, endDate, holidays);
+    const count = calculateDays(startDate, endDate, holidays, { employee });
     return count > 0 ? count : 0;
-  }, [startDate, endDate, isHalfDay, holidays]);
+  }, [startDate, endDate, isHalfDay, holidays, employee]);
 
   const onSubmit = async (data) => {
     if (!data.isHalfDay && new Date(data.endDate) < new Date(data.startDate)) {

@@ -4,12 +4,14 @@ import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { applyLeave, getHolidays } from '../services/leaveService';
 import { calculateDays } from '../utils/days';
+import { useAuth } from '../context/AuthContext';
 
 const types = [
   { value: 'leave', label: 'Leave' },
 ];
 
 export default function ApplyLeaveForm({ defaultDate, onSubmitted }) {
+  const { user } = useAuth();
   const today = new Date().toISOString().slice(0, 10);
   const initialDate = defaultDate || today;
   const { register, handleSubmit, watch, setValue, formState: { errors, isSubmitting } } = useForm({
@@ -42,12 +44,12 @@ export default function ApplyLeaveForm({ defaultDate, onSubmitted }) {
   const totalDays = useMemo(() => {
     if (!startDate || !endDate) return 0;
     if (isHalfDay) {
-      const count = calculateDays(startDate, startDate, holidays);
+      const count = calculateDays(startDate, startDate, holidays, { employee: user });
       return count > 0 ? 0.5 : 0;
     }
-    const count = calculateDays(startDate, endDate, holidays);
+    const count = calculateDays(startDate, endDate, holidays, { employee: user });
     return count > 0 ? count : 0;
-  }, [startDate, endDate, isHalfDay, holidays]);
+  }, [startDate, endDate, isHalfDay, holidays, user]);
 
   const onSubmit = async (data) => {
     if (!data.isHalfDay && new Date(data.endDate) < new Date(data.startDate)) {
