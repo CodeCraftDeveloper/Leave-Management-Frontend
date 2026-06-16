@@ -9,8 +9,33 @@ import {
   resendVerification as resendVerificationApi,
 } from '../services/authService';
 
-const EMAIL_RE = /^\S+@\S+\.\S+$/;
+const EMAIL_RE =
+  /^[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$/i;
+const COMMON_DOMAIN_TYPOS = {
+  'gamil.com': 'gmail.com',
+  'gmial.com': 'gmail.com',
+  'gmai.com': 'gmail.com',
+  'gmail.co': 'gmail.com',
+  'gmail.con': 'gmail.com',
+  'gnail.com': 'gmail.com',
+  'hotmial.com': 'hotmail.com',
+  'outlok.com': 'outlook.com',
+  'premindustrie.in': 'premindustries.in',
+  'premindustries.com': 'premindustries.in',
+};
 const RESEND_COOLDOWN_SECONDS = 30;
+
+const validateEmailInput = (value) => {
+  const normalized = value.trim().toLowerCase();
+  const [local, domain] = normalized.split('@');
+  if (!EMAIL_RE.test(normalized) || normalized.length > 254 || normalized.includes('..')) {
+    return 'Please enter a valid email address';
+  }
+  if (COMMON_DOMAIN_TYPOS[domain]) {
+    return `Did you mean ${local}@${COMMON_DOMAIN_TYPOS[domain]}?`;
+  }
+  return '';
+};
 
 export default function EmailSetupModal() {
   const { user, updateUser } = useAuth();
@@ -62,8 +87,9 @@ export default function EmailSetupModal() {
   const sendEmail = async (evt) => {
     evt?.preventDefault?.();
     const value = email.trim().toLowerCase();
-    if (!EMAIL_RE.test(value)) {
-      setError('Please enter a valid email address');
+    const validationError = validateEmailInput(value);
+    if (validationError) {
+      setError(validationError);
       return;
     }
     setError('');
