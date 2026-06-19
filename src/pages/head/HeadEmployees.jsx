@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
+  FiCalendar,
   FiCheckCircle,
   FiEdit2,
   FiMail,
@@ -15,6 +16,7 @@ import PageHeader from '../../components/PageHeader';
 import EmptyState from '../../components/EmptyState';
 import { ListSkeleton } from '../../components/Skeleton';
 import Modal from '../../components/Modal';
+import ApplyOnBehalfModal from '../../components/ApplyOnBehalfModal';
 import {
   getTeam,
   getWeeklyDigestPreview,
@@ -81,6 +83,7 @@ export default function HeadEmployees() {
   const [selectedHeadId, setSelectedHeadId] = useState('');
   const [employeeModal, setEmployeeModal] = useState(null);
   const [employeeForm, setEmployeeForm] = useState(emptyForm);
+  const [applyLeaveTarget, setApplyLeaveTarget] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [savingAssignedHead, setSavingAssignedHead] = useState(false);
   const [removingHeadId, setRemovingHeadId] = useState('');
@@ -547,21 +550,32 @@ export default function HeadEmployees() {
                     </button>
                   </div>
                 )}
-                <div className="grid grid-cols-2 gap-2 mt-2">
-                  <button
-                    type="button"
-                    onClick={() => openEdit(employee)}
-                    className="btn-outline text-xs gap-1 px-2"
-                  >
-                    <FiEdit2 /> Edit
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDeleteTarget(employee)}
-                    className="btn border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 text-xs gap-1 px-2"
-                  >
-                    <FiTrash2 /> Remove
-                  </button>
+                <div className="mt-4 space-y-2">
+                  {superAdmin && (
+                    <button
+                      type="button"
+                      onClick={() => setApplyLeaveTarget(employee)}
+                      className="w-full inline-flex items-center justify-center gap-1.5 rounded-xl border border-primary/20 bg-primary/5 px-3 py-2 text-xs font-semibold text-primary transition hover:bg-primary/10"
+                    >
+                      <FiCalendar className="w-3.5 h-3.5" /> Apply Leave
+                    </button>
+                  )}
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => openEdit(employee)}
+                      className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-outline-variant/40 bg-surface-container-low px-3 py-2 text-xs font-medium text-on-surface-variant transition hover:bg-surface-container"
+                    >
+                      <FiEdit2 className="w-3.5 h-3.5" /> Edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDeleteTarget(employee)}
+                      className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-600 transition hover:bg-rose-100"
+                    >
+                      <FiTrash2 className="w-3.5 h-3.5" /> Remove
+                    </button>
+                  </div>
                 </div>
               </article>
             ))}
@@ -732,6 +746,13 @@ export default function HeadEmployees() {
           </p>
         )}
       </Modal>
+
+      <ApplyOnBehalfModal
+        open={!!applyLeaveTarget}
+        onClose={() => setApplyLeaveTarget(null)}
+        employee={applyLeaveTarget}
+        onSuccess={() => load(search, departmentFilter)}
+      />
 
       <Modal
         open={!!deleteTarget}
