@@ -67,7 +67,9 @@ const toEmployeeForm = (employee) => ({
 const headEmailValue = (head) =>
   String(head?.notificationEmail || head?.email || '').toLowerCase();
 
-const requiredFields = ['employeeId', 'name', 'department', 'designation'];
+// Email and designation are optional at creation — an admin can fill them in
+// later, so they're left out of the required set.
+const requiredFields = ['employeeId', 'name', 'department'];
 
 export default function HeadEmployees() {
   const { user } = useAuth();
@@ -126,7 +128,7 @@ export default function HeadEmployees() {
       return;
     }
     const currentHeadIds = new Set(approvalHeads.map((head) => head._id));
-    const firstAvailable = headDirectory.find((head) => !currentHeadIds.has(head._id));
+    const firstAvailable = assignableHeads.find((head) => !currentHeadIds.has(head._id));
     setSelectedHeadId(firstAvailable?._id || '');
     setAssignHeadTarget({ employee, department, approvalHeads });
   };
@@ -203,7 +205,7 @@ export default function HeadEmployees() {
   const submitEmployee = async () => {
     const missing = requiredFields.find((field) => !employeeForm[field].trim());
     if (missing) {
-      toast.error('Employee ID, name, department and designation are required');
+      toast.error('Employee ID, name and department are required');
       return;
     }
     if (employeeModal?.mode === 'create' && employeeForm.password.length < 6) {
@@ -272,6 +274,16 @@ export default function HeadEmployees() {
     const emails = [head.email, head.notificationEmail].map((value) => String(value || '').toLowerCase());
     const isSuperAdminHead = emails.some((email) => SUPERADMIN_EMAILS.includes(email));
     return !isSuperAdminHead || headId === currentUserId;
+  });
+
+  // The overall super admin (e.g. HEAD001) is never a departmental reporting
+  // head. Keep it out of every reporting-head picker — the account still exists
+  // and approves globally, it's just hidden from these assignment lists.
+  const assignableHeads = headDirectory.filter((head) => {
+    const emails = [head.email, head.notificationEmail].map((value) =>
+      String(value || '').toLowerCase()
+    );
+    return !emails.some((email) => SUPERADMIN_EMAILS.includes(email));
   });
 
   const verificationRows = useMemo(
@@ -625,7 +637,7 @@ export default function HeadEmployees() {
             label="Head"
             value={selectedHeadId}
             onChange={setSelectedHeadId}
-            options={headDirectory
+            options={assignableHeads
               .filter((head) => !assignHeadTarget?.approvalHeads?.some((current) => current._id === head._id))
               .map((head) => ({
                 value: head._id,
@@ -702,10 +714,10 @@ export default function HeadEmployees() {
               Select the Head(s) who receive and approve this employee&apos;s leave requests.
             </p>
             <div className="max-h-48 overflow-auto rounded-lg border border-outline-variant/50 divide-y divide-outline-variant/30">
-              {headDirectory.length === 0 ? (
+              {assignableHeads.length === 0 ? (
                 <p className="text-xs text-on-surface-variant p-3">No Head accounts available to assign.</p>
               ) : (
-                headDirectory.map((head) => {
+                assignableHeads.map((head) => {
                   const value = headEmailValue(head);
                   const checked = employeeForm.headNotificationEmails.includes(value);
                   return (
@@ -757,20 +769,21 @@ export default function HeadEmployees() {
       <Modal
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
-        title="Remove Employee"
+        title="Delete Employee"
         footer={(
           <>
             <button type="button" onClick={() => setDeleteTarget(null)} className="btn-outline">
               Cancel
             </button>
             <button type="button" onClick={confirmDelete} disabled={deletingEmployee} className="btn bg-rose-600 text-white">
-              {deletingEmployee ? 'Removing...' : 'Remove'}
+              {deletingEmployee ? 'Deleting...' : 'Delete permanently'}
             </button>
           </>
         )}
       >
         <p className="text-sm text-on-surface-variant">
-          Remove <b>{deleteTarget?.name}</b> from active employees? Their existing leave history will remain in reports.
+          Permanently delete <b>{deleteTarget?.name}</b>? This removes the employee along with all of their
+          leave, attendance, payroll and salary records. This action cannot be undone.
         </p>
       </Modal>
     </div>
