@@ -10,6 +10,7 @@ import {
   FiTrash2,
   FiSend,
   FiUsers,
+  FiUploadCloud,
 } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import PageHeader from '../../components/PageHeader';
@@ -17,6 +18,7 @@ import EmptyState from '../../components/EmptyState';
 import { ListSkeleton } from '../../components/Skeleton';
 import Modal from '../../components/Modal';
 import ApplyOnBehalfModal from '../../components/ApplyOnBehalfModal';
+import BulkImportModal from '../../components/BulkImportModal';
 import {
   getTeam,
   getWeeklyDigestPreview,
@@ -87,6 +89,7 @@ export default function HeadEmployees() {
   const [employeeForm, setEmployeeForm] = useState(emptyForm);
   const [applyLeaveTarget, setApplyLeaveTarget] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [importOpen, setImportOpen] = useState(false);
   const [savingAssignedHead, setSavingAssignedHead] = useState(false);
   const [removingHeadId, setRemovingHeadId] = useState('');
   const [savingEmployee, setSavingEmployee] = useState(false);
@@ -333,6 +336,14 @@ export default function HeadEmployees() {
             >
               <FiPlus />
               Add Employee
+            </button>
+            <button
+              type="button"
+              onClick={() => setImportOpen(true)}
+              className="btn-outline h-10 gap-2 px-3 text-xs sm:text-sm"
+            >
+              <FiUploadCloud />
+              Import Excel
             </button>
             {superAdmin && (
               <button
@@ -786,6 +797,12 @@ export default function HeadEmployees() {
           leave, attendance, payroll and salary records. This action cannot be undone.
         </p>
       </Modal>
+
+      <BulkImportModal
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        onImported={() => load(search, departmentFilter)}
+      />
     </div>
   );
 }
