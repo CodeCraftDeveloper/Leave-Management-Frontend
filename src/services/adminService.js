@@ -47,6 +47,25 @@ export const importEmployees = (file) => {
   return api.post('/admin/employees/import', formData).then((r) => r.data);
 };
 
+export const exportEmployeesExcel = async (params = {}) => {
+  const response = await api.get('/admin/employees/export', {
+    params,
+    responseType: 'blob',
+  });
+  const blob = new Blob([response.data], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+  const url = window.URL.createObjectURL(blob);
+  const stamp = new Date().toISOString().slice(0, 10);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `employees-${stamp}.xlsx`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
+};
+
 export const exportLeavesExcel = async (params = {}) => {
   const response = await api.get('/admin/leaves/export', {
     params,

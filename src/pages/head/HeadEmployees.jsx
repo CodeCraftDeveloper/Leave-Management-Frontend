@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   FiCalendar,
   FiCheckCircle,
+  FiDownload,
   FiEdit2,
   FiMail,
   FiPlus,
@@ -26,7 +27,7 @@ import {
   setHeadsGroup,
   sendWeeklyDigestNow,
 } from '../../services/manageService';
-import { createEmployee, deleteEmployee, updateEmployee, listHeads } from '../../services/adminService';
+import { createEmployee, deleteEmployee, updateEmployee, listHeads, exportEmployeesExcel } from '../../services/adminService';
 import { fmtDate } from '../../utils/format';
 import { useAuth } from '../../context/AuthContext';
 import { isSuperAdmin, SUPERADMIN_EMAILS } from '../../utils/roles';
@@ -90,6 +91,8 @@ export default function HeadEmployees() {
   const [applyLeaveTarget, setApplyLeaveTarget] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [importOpen, setImportOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [exportOrder, setExportOrder] = useState('asc');
   const [savingAssignedHead, setSavingAssignedHead] = useState(false);
   const [removingHeadId, setRemovingHeadId] = useState('');
   const [savingEmployee, setSavingEmployee] = useState(false);
@@ -178,6 +181,18 @@ export default function HeadEmployees() {
       toast.success(result.message || 'Weekly digest sent');
     } finally {
       setSendingDigest(false);
+    }
+  };
+
+  const exportExcel = async () => {
+    setExporting(true);
+    try {
+      await exportEmployeesExcel({ sort: exportOrder });
+      toast.success(`Employees exported (Employee ID ${exportOrder === 'asc' ? 'A→Z' : 'Z→A'})`);
+    } catch {
+      toast.error('Export failed. Please try again.');
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -345,6 +360,24 @@ export default function HeadEmployees() {
               <FiUploadCloud />
               Import Excel
             </button>
+            <button
+              type="button"
+              onClick={exportExcel}
+              disabled={exporting}
+              className="btn-outline h-10 gap-2 px-3 text-xs sm:text-sm"
+            >
+              <FiDownload />
+              {exporting ? 'Exporting...' : 'Export Excel'}
+            </button>
+            <select
+              value={exportOrder}
+              onChange={(event) => setExportOrder(event.target.value)}
+              className="input text-xs h-10 lg:max-w-[8.5rem]"
+              title="Sort order by Employee ID"
+            >
+              <option value="asc">ID Ascending</option>
+              <option value="desc">ID Descending</option>
+            </select>
             {superAdmin && (
               <button
                 type="button"
