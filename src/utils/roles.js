@@ -8,4 +8,15 @@ export const SUPERADMIN_EMAILS = ['charan.f.sde@gmail.com', 'rajan.kumar@premind
 export const SUPERADMIN_EMAIL = SUPERADMIN_EMAILS[0];
 
 export const isSuperAdmin = (user) =>
-  Boolean(user?.isSuperAdmin) || SUPERADMIN_EMAILS.includes(String(user?.email || '').toLowerCase());
+  Boolean(user?.isSuperAdmin) || [user?.email, user?.notificationEmail].some((email) =>
+    SUPERADMIN_EMAILS.includes(String(email || '').toLowerCase())
+  );
+
+// The primary overall head (HEAD001 / charan.f.sde@gmail.com). Distinct from the
+// broader super-admin set above. Mirrors `isPrimaryHeadEmail` in server/seed.js.
+// Hidden from management lists so the account is not presented as a departmental
+// reviewer — it still exists, logs in, and approves globally.
+export const isPrimarySuperAdmin = (person) =>
+  [person?.email, person?.notificationEmail].some((email) =>
+    String(email || '').trim().toLowerCase() === SUPERADMIN_EMAIL
+  );

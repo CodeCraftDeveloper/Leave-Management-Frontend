@@ -8,6 +8,8 @@ export const getEmployees = (params) =>
   api.get('/admin/employees', { params }).then((r) => r.data);
 export const listHeads = () =>
   api.get('/admin/heads').then((r) => r.data);
+export const getManagedHeads = () =>
+  api.get('/admin/heads/manage').then((r) => r.data);
 export const createEmployee = (payload) =>
   api.post('/admin/employees', payload).then((r) => r.data);
 export const getEmployeeDetail = (id) =>

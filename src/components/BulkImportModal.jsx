@@ -22,7 +22,7 @@ const COLUMN_HELP = [
   { header: 'Designation', required: false, description: 'Job title. Defaults to "Employee" when blank.' },
   { header: 'Password', required: false, description: 'Initial password (min 6). Auto-generated if blank — shown in results.' },
   { header: 'Joining Date', required: false, description: 'Date of joining, YYYY-MM-DD.' },
-  { header: 'Role', required: false, description: 'employee or head. Only the super admin can create heads.' },
+  { header: 'Role', required: false, description: 'Employee accounts only. Create Head accounts on the Heads page.' },
   { header: 'Reporting Head Emails', required: false, description: 'Comma-separated Head routing emails (see the Heads tab). Left blank, a head’s import routes to that head automatically.' },
 ];
 
