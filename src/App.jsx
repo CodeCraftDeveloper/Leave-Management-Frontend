@@ -15,6 +15,7 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminCalendar from './pages/admin/AdminCalendar';
 import ReviewQueue from './pages/manage/ReviewQueue';
 import HeadEmployees from './pages/head/HeadEmployees';
+import HeadAccounts from './pages/head/HeadAccounts';
 import HeadProfile from './pages/head/HeadProfile';
 
 export default function App() {
@@ -50,6 +51,7 @@ export default function App() {
         <Route index element={<AdminDashboard />} />
         <Route path="leaves" element={<ReviewQueue title="Leaves Register" subtitle="Employee leave applications routed to this Head for review and export" />} />
         <Route path="employees" element={<HeadEmployees />} />
+        <Route path="heads" element={<HeadAccounts />} />
         <Route path="calendar" element={<AdminCalendar />} />
         <Route path="profile" element={<HeadProfile />} />
       </Route>

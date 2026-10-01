@@ -9,7 +9,6 @@ import {
   FiSearch,
   FiShield,
   FiTrash2,
-  FiSend,
   FiUsers,
   FiUploadCloud,
 } from 'react-icons/fi';
@@ -22,19 +21,15 @@ import ApplyOnBehalfModal from '../../components/ApplyOnBehalfModal';
 import BulkImportModal from '../../components/BulkImportModal';
 import {
   getTeam,
-  getWeeklyDigestPreview,
   listDepartments,
-  setHeadsGroup,
-  sendWeeklyDigestNow,
 } from '../../services/manageService';
 import { createEmployee, deleteEmployee, updateEmployee, listHeads, exportEmployeesExcel } from '../../services/adminService';
-import { fmtDate } from '../../utils/format';
 import { useAuth } from '../../context/AuthContext';
 import { isSuperAdmin, SUPERADMIN_EMAILS } from '../../utils/roles';
 
 const roleLabel = {
   employee: 'Employee',
-  head: 'Head',
+  dept_head: 'Employee',
 };
 
 const emptyForm = {
@@ -46,7 +41,6 @@ const emptyForm = {
   designation: '',
   joiningDate: '',
   password: '',
-  role: 'employee',
   headNotificationEmails: [],
 };
 
@@ -59,7 +53,6 @@ const toEmployeeForm = (employee) => ({
   designation: employee.designation || '',
   joiningDate: employee.joiningDate ? employee.joiningDate.slice(0, 10) : '',
   password: '',
-  role: employee.role || 'employee',
   headNotificationEmails: (employee.headNotificationEmails || []).map((email) =>
     String(email || '').toLowerCase()
   ),
@@ -82,10 +75,7 @@ export default function HeadEmployees() {
   const [data, setData] = useState({ items: [] });
   const [departments, setDepartments] = useState([]);
   const [headDirectory, setHeadDirectory] = useState([]);
-  const [digest, setDigest] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [assignHeadTarget, setAssignHeadTarget] = useState(null);
-  const [selectedHeadId, setSelectedHeadId] = useState('');
   const [employeeModal, setEmployeeModal] = useState(null);
   const [employeeForm, setEmployeeForm] = useState(emptyForm);
   const [applyLeaveTarget, setApplyLeaveTarget] = useState(null);
@@ -93,11 +83,8 @@ export default function HeadEmployees() {
   const [importOpen, setImportOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [exportOrder, setExportOrder] = useState('asc');
-  const [savingAssignedHead, setSavingAssignedHead] = useState(false);
-  const [removingHeadId, setRemovingHeadId] = useState('');
   const [savingEmployee, setSavingEmployee] = useState(false);
   const [deletingEmployee, setDeletingEmployee] = useState(false);
-  const [sendingDigest, setSendingDigest] = useState(false);
 
   const load = (q = search, dept = departmentFilter) => {
     setLoading(true);
@@ -105,20 +92,16 @@ export default function HeadEmployees() {
       getTeam({
         search: q || undefined,
         department: dept || undefined,
-        includeHeads: superAdmin ? true : undefined,
       }),
       listDepartments(),
       // Head directory powers the reporting-head selector; available to every
       // head (the super admin included), not just the super admin.
       listHeads().catch(() => ({ items: [] })),
-      // Weekly digest is a super-admin-only global view.
-      superAdmin ? getWeeklyDigestPreview().catch(() => null) : Promise.resolve(null),
     ])
-      .then(([team, departmentList, headList, digestPreview]) => {
+      .then(([team, departmentList, headList]) => {
         setData(team);
         setDepartments(departmentList.items || []);
         setHeadDirectory(headList.items || []);
-        setDigest(digestPreview);
       })
       .finally(() => setLoading(false));
   };
@@ -127,62 +110,6 @@ export default function HeadEmployees() {
     load('');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const openAssignHead = ({ employee, department, approvalHeads }) => {
-    if (!department) {
-      toast.error('Create the department group before assigning a Head');
-      return;
-    }
-    const currentHeadIds = new Set(approvalHeads.map((head) => head._id));
-    const firstAvailable = assignableHeads.find((head) => !currentHeadIds.has(head._id));
-    setSelectedHeadId(firstAvailable?._id || '');
-    setAssignHeadTarget({ employee, department, approvalHeads });
-  };
-
-  const confirmAssignHead = async () => {
-    if (!assignHeadTarget || !selectedHeadId) return;
-    setSavingAssignedHead(true);
-    try {
-      const headIds = [
-        ...assignHeadTarget.approvalHeads.map((head) => head._id),
-        selectedHeadId,
-      ];
-      await setHeadsGroup(assignHeadTarget.department._id, [...new Set(headIds)]);
-      const head = headDirectory.find((item) => item._id === selectedHeadId);
-      toast.success(`${head?.name || 'Head'} assigned to ${assignHeadTarget.department.name}`);
-      setAssignHeadTarget(null);
-      setSelectedHeadId('');
-      load(search, departmentFilter);
-    } finally {
-      setSavingAssignedHead(false);
-    }
-  };
-
-  const removeApprovalHead = async ({ department, approvalHeads, head }) => {
-    if (!department || !head) return;
-    if (!confirm(`Remove ${head.name} from approval heads for ${department.name}?`)) return;
-    setRemovingHeadId(`${department._id}:${head._id}`);
-    try {
-      const nextHeadIds = approvalHeads
-        .filter((current) => current._id !== head._id)
-        .map((current) => current._id);
-      await setHeadsGroup(department._id, nextHeadIds);
-      toast.success(`${head.name} removed from ${department.name}`);
-      load(search, departmentFilter);
-    } finally {
-      setRemovingHeadId('');
-    }
-  };
-
-  const sendDigest = async () => {
-    setSendingDigest(true);
-    try {
-      const result = await sendWeeklyDigestNow();
-      toast.success(result.message || 'Weekly digest sent');
-    } finally {
-      setSendingDigest(false);
-    }
-  };
 
   const exportExcel = async () => {
     setExporting(true);
@@ -237,7 +164,6 @@ export default function HeadEmployees() {
 
     setSavingEmployee(true);
     try {
-      const isHeadAccount = (superAdmin ? employeeForm.role : employeeModal?.employee?.role) === 'head';
       const payload = {
         employeeId: employeeForm.employeeId,
         name: employeeForm.name,
@@ -246,13 +172,10 @@ export default function HeadEmployees() {
         department: employeeForm.department,
         designation: employeeForm.designation,
         joiningDate: employeeForm.joiningDate || undefined,
-        role: superAdmin ? employeeForm.role : undefined,
-        // Reporting heads only apply to staff who route leave for approval; a
-        // Head account is itself an approver, so don't send the field for them.
-        ...(isHeadAccount ? {} : { headNotificationEmails: employeeForm.headNotificationEmails }),
+        headNotificationEmails: employeeForm.headNotificationEmails,
       };
       if (employeeModal.mode === 'create') {
-        await createEmployee({ ...payload, password: employeeForm.password });
+        await createEmployee({ ...payload, role: 'employee', password: employeeForm.password });
         toast.success('Employee added');
       } else {
         const updatedEmployee = await updateEmployee(employeeModal.employee._id, {
@@ -301,14 +224,6 @@ export default function HeadEmployees() {
     [data.items]
   );
 
-  const currentUserId = String(user?._id || '');
-  const headAccounts = headDirectory.filter((head) => {
-    const headId = String(head._id || '');
-    const emails = [head.email, head.notificationEmail].map((value) => String(value || '').toLowerCase());
-    const isSuperAdminHead = emails.some((email) => SUPERADMIN_EMAILS.includes(email));
-    return !isSuperAdminHead || headId === currentUserId;
-  });
-
   // The overall super admin (e.g. HEAD001) is never a departmental reporting
   // head. Keep it out of every reporting-head picker — the account still exists
   // and approves globally, it's just hidden from these assignment lists.
@@ -356,7 +271,7 @@ export default function HeadEmployees() {
     <div className="space-y-5">
       <PageHeader
         title="Employees"
-        subtitle={`${data.total ?? data.items.length} active employee and Head account records`}
+        subtitle={`${visibleEmployees.length} active employee${visibleEmployees.length === 1 ? '' : 's'}`}
         action={(
           <div className="flex flex-wrap justify-end gap-2">
             <button
@@ -393,37 +308,9 @@ export default function HeadEmployees() {
               <option value="asc">ID Ascending</option>
               <option value="desc">ID Descending</option>
             </select>
-            {superAdmin && (
-              <button
-                type="button"
-                onClick={sendDigest}
-                disabled={sendingDigest}
-                className="btn-outline h-10 text-xs sm:text-sm gap-2"
-              >
-                <FiSend />
-                {sendingDigest ? 'Sending...' : 'Send weekly digest'}
-              </button>
-            )}
           </div>
         )}
       />
-
-      {superAdmin && (
-        <section className="card p-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-              <p className="text-sm font-semibold">Approved leave digest</p>
-              <p className="text-xs text-on-surface-variant mt-1">
-                Monday mail to heads includes approved leaves for the current week.
-              </p>
-            </div>
-            <div className="text-xs text-on-surface-variant sm:text-right">
-              <p>{digest ? `${fmtDate(digest.weekStart)} to ${fmtDate(digest.weekEnd)}` : 'Digest window unavailable'}</p>
-              <p>{digest?.leaves?.length ?? 0} approved leave(s)</p>
-            </div>
-          </div>
-        </section>
-      )}
 
       <form
         onSubmit={(event) => {
@@ -491,57 +378,6 @@ export default function HeadEmployees() {
             </div>
           </section>
 
-          {superAdmin && headAccounts.length > 0 && (
-            <section className="space-y-3">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-sm font-semibold">Head accounts</p>
-                  <p className="text-xs text-on-surface-variant">Create, edit, or remove global and department-scoped Head login accounts.</p>
-                </div>
-                <span className="chip text-xs bg-surface-container-low border border-outline-variant/30">
-                  {headAccounts.length} Head{headAccounts.length === 1 ? '' : 's'}
-                </span>
-              </div>
-              <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-3">
-                {headAccounts.map((head) => (
-                  <article key={head._id} className="card p-4 min-w-0">
-                    <div className="flex items-start gap-3">
-                      <div className="w-12 h-12 rounded-full bg-primary-container text-on-primary-container border border-outline-variant/50 grid place-items-center font-semibold shrink-0">
-                        {head.name?.[0]}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm sm:text-base font-semibold truncate">{head.name}</p>
-                        <p className="text-[11px] sm:text-xs text-on-surface-variant truncate">{head.employeeId} - {head.department}</p>
-                        <p className="text-[11px] sm:text-xs text-on-surface-variant/75 truncate inline-flex items-center gap-1 mt-2">
-                          <FiMail className="shrink-0" /> {head.email || head.notificationEmail}
-                        </p>
-                        <span className="chip mt-3 text-[11px] bg-primary-container text-on-primary-container border border-outline-variant/30">
-                          Head
-                        </span>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 mt-3">
-                      <button
-                        type="button"
-                        onClick={() => openEdit(head)}
-                        className="btn-outline text-xs gap-1 px-2"
-                      >
-                        <FiEdit2 /> Edit
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setDeleteTarget(head)}
-                        className="btn border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 text-xs gap-1 px-2"
-                      >
-                        <FiTrash2 /> Remove
-                      </button>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            </section>
-          )}
-
           <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-3">
             {verificationRows.map(({ employee, department, approvalHeads }) => (
               <article key={employee._id} className="card p-4 min-w-0">
@@ -589,18 +425,6 @@ export default function HeadEmployees() {
                             className="chip text-[11px] bg-primary-container text-on-primary-container border border-outline-variant/30 pr-1"
                           >
                             <span>{headLabel(head)}</span>
-                            {false && (
-                              <button
-                                type="button"
-                                onClick={() => removeApprovalHead({ department, approvalHeads, head })}
-                                disabled={removingHeadId === `${department?._id}:${head._id}`}
-                                className="ml-1 w-5 h-5 rounded-full grid place-items-center hover:bg-black/10 disabled:opacity-50"
-                                aria-label={`Remove ${head.name} from ${department?.name} approval heads`}
-                                title="Remove approval head"
-                              >
-                                ×
-                              </button>
-                            )}
                           </span>
                         ))}
                       </div>
@@ -609,18 +433,6 @@ export default function HeadEmployees() {
                     )}
                   </div>
                 </div>
-                {false && (
-                  <div className="grid grid-cols-1 gap-2 mt-3">
-                    <button
-                      type="button"
-                      onClick={() => openAssignHead({ employee, department, approvalHeads })}
-                      disabled={!department || headDirectory.length === 0}
-                      className="btn-outline text-xs"
-                    >
-                      <FiShield /> Assign Head
-                    </button>
-                  </div>
-                )}
                 <div className="mt-4 space-y-2">
                   {superAdmin && (
                     <button
@@ -655,70 +467,6 @@ export default function HeadEmployees() {
       )}
 
       <Modal
-        open={!!assignHeadTarget}
-        onClose={() => {
-          setAssignHeadTarget(null);
-          setSelectedHeadId('');
-        }}
-        title="Assign Approval Head"
-        footer={(
-          <>
-            <button
-              type="button"
-              onClick={() => {
-                setAssignHeadTarget(null);
-                setSelectedHeadId('');
-              }}
-              className="btn-outline"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={confirmAssignHead}
-              disabled={savingAssignedHead || !selectedHeadId}
-              className="btn-primary"
-            >
-              {savingAssignedHead ? 'Assigning...' : 'Assign Head'}
-            </button>
-          </>
-        )}
-      >
-        <div className="space-y-4">
-          <div className="rounded-lg border border-outline-variant/50 p-3">
-            <p className="text-xs uppercase text-on-surface-variant">Department</p>
-            <p className="text-sm font-semibold">{assignHeadTarget?.department?.name}</p>
-            <p className="text-xs text-on-surface-variant mt-1">
-              Employee: {assignHeadTarget?.employee?.name} ({assignHeadTarget?.employee?.employeeId})
-            </p>
-          </div>
-          <SelectField
-            label="Head"
-            value={selectedHeadId}
-            onChange={setSelectedHeadId}
-            options={assignableHeads
-              .filter((head) => !assignHeadTarget?.approvalHeads?.some((current) => current._id === head._id))
-              .map((head) => ({
-                value: head._id,
-                label: headLabel(head),
-              }))}
-          />
-          {assignHeadTarget?.approvalHeads?.length ? (
-            <div>
-              <p className="text-xs uppercase text-on-surface-variant">Currently assigned</p>
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {assignHeadTarget.approvalHeads.map((head) => (
-                  <span key={head._id} className="chip text-[11px] bg-primary-container text-on-primary-container border border-outline-variant/30">
-                    {headLabel(head)}
-                  </span>
-                ))}
-              </div>
-            </div>
-          ) : null}
-        </div>
-      </Modal>
-
-      <Modal
         open={!!employeeModal}
         onClose={() => { setEmployeeModal(null); setEmployeeForm(emptyForm); }}
         title={employeeModal?.mode === 'create' ? 'Add Employee' : 'Edit Employee'}
@@ -738,17 +486,6 @@ export default function HeadEmployees() {
         )}
       >
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {superAdmin && (
-            <SelectField
-              label="Account Type"
-              value={employeeForm.role}
-              onChange={(value) => updateForm('role', value)}
-              options={[
-                { value: 'employee', label: 'Employee' },
-                { value: 'head', label: 'Head' },
-              ]}
-            />
-          )}
           <Field label="Employee ID" value={employeeForm.employeeId} onChange={(value) => updateForm('employeeId', value)} />
           <Field label="Full Name" value={employeeForm.name} onChange={(value) => updateForm('name', value)} />
           <Field label="Email" type="email" value={employeeForm.email} onChange={(value) => updateForm('email', value)} />
@@ -782,9 +519,8 @@ export default function HeadEmployees() {
           </div>
         )}
 
-        {(superAdmin ? employeeForm.role : employeeModal?.employee?.role) !== 'head' && (
-          <div className="mt-4">
-            <span className="label">Reporting Head(s) for leave approval</span>
+        <div className="mt-4">
+          <span className="label">Reporting Head(s) for leave approval</span>
             <p className="text-xs text-on-surface-variant mb-2">
               Select the Head(s) who receive and approve this employee&apos;s leave requests.
             </p>
@@ -824,8 +560,7 @@ export default function HeadEmployees() {
                 No reporting head assigned — this employee&apos;s leave requests won&apos;t route to anyone.
               </p>
             )}
-          </div>
-        )}
+        </div>
 
         {employeeModal?.mode === 'edit' && (
           <p className="mt-3 text-xs text-on-surface-variant">

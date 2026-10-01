@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom';
-import { FiHome, FiFileText, FiUsers, FiCalendar, FiUser, FiLogOut, FiMenu, FiX } from 'react-icons/fi';
+import { FiHome, FiFileText, FiUsers, FiShield, FiCalendar, FiUser, FiLogOut, FiMenu, FiX } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useState } from 'react';
@@ -7,12 +7,13 @@ import EmailSetupModal from '../components/EmailSetupModal';
 import BrandLogo from '../components/BrandLogo';
 import { isSuperAdmin } from '../utils/roles';
 
-// Departments management is a global power — only the super admin gets that nav
-// entry. Scoped heads see only their own department's data on the other pages.
+// Head account management is reserved for the super admin. Scoped Heads use
+// the shared employee and leave screens for their assigned staff.
 const baseItems = [
   { to: '/head', icon: FiHome, label: 'Dashboard', end: true, headOnly: true },
   { to: '/head/leaves', icon: FiFileText, label: 'Leave Requests' },
   { to: '/head/employees', icon: FiUsers, label: 'Employees', headOnly: true },
+  { to: '/head/heads', icon: FiShield, label: 'Heads', superAdminOnly: true },
   { to: '/head/calendar', icon: FiCalendar, label: 'Calendar', headOnly: true },
   // Available to every console user so heads can change their own password.
   { to: '/head/profile', icon: FiUser, label: 'Profile' },
