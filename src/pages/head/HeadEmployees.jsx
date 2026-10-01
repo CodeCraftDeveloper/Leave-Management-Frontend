@@ -226,8 +226,12 @@ export default function HeadEmployees() {
       toast.error('Employee ID, name and department are required');
       return;
     }
-    if (employeeModal?.mode === 'create' && employeeForm.password.length < 6) {
+    if ((employeeModal?.mode === 'create' || (superAdmin && employeeForm.password)) && employeeForm.password.length < 6) {
       toast.error('Password must be at least 6 characters');
+      return;
+    }
+    if (superAdmin && employeeModal?.mode === 'edit' && employeeForm.password && !employeeForm.email.trim()) {
+      toast.error('Add an employee email before resetting their password');
       return;
     }
 
@@ -251,8 +255,19 @@ export default function HeadEmployees() {
         await createEmployee({ ...payload, password: employeeForm.password });
         toast.success('Employee added');
       } else {
-        await updateEmployee(employeeModal.employee._id, payload);
-        toast.success('Employee updated');
+        const updatedEmployee = await updateEmployee(employeeModal.employee._id, {
+          ...payload,
+          ...(superAdmin && employeeForm.password ? { password: employeeForm.password } : {}),
+        });
+        if (updatedEmployee.passwordResetEmail === 'failed') {
+          toast.error('Password changed, but the email could not be sent. Check mail delivery and retry.');
+          load(search);
+          return;
+        } else {
+          toast.success(updatedEmployee.passwordResetEmail === 'sent'
+            ? 'Employee updated and new password emailed'
+            : 'Employee updated');
+        }
       }
       setEmployeeModal(null);
       setEmployeeForm(emptyForm);
@@ -751,6 +766,22 @@ export default function HeadEmployees() {
           )}
         </div>
 
+        {superAdmin && employeeModal?.mode === 'edit' && (
+          <div className="mt-4">
+            <Field
+              label="Reset Password"
+              type="password"
+              value={employeeForm.password}
+              onChange={(value) => updateForm('password', value)}
+              autoComplete="new-password"
+            />
+            <p className="mt-1.5 text-xs text-on-surface-variant">
+              Leave blank to keep the current password. New passwords must have at least 6 characters.{' '}
+              When saved, the new password will be emailed to the employee, with instructions to change it in Profile.
+            </p>
+          </div>
+        )}
+
         {(superAdmin ? employeeForm.role : employeeModal?.employee?.role) !== 'head' && (
           <div className="mt-4">
             <span className="label">Reporting Head(s) for leave approval</span>
@@ -798,7 +829,8 @@ export default function HeadEmployees() {
 
         {employeeModal?.mode === 'edit' && (
           <p className="mt-3 text-xs text-on-surface-variant">
-            Password changes stay with the employee profile flow. Editing email will require the employee to verify the new address.
+            {!superAdmin && 'Employees can change their password from Profile. '}
+            Editing email will require the employee to verify the new address.
           </p>
         )}
       </Modal>
@@ -840,7 +872,7 @@ export default function HeadEmployees() {
   );
 }
 
-const Field = ({ label, value, onChange, type = 'text' }) => (
+const Field = ({ label, value, onChange, type = 'text', ...props }) => (
   <label className="block">
     <span className="label">{label}</span>
     <input
@@ -848,6 +880,7 @@ const Field = ({ label, value, onChange, type = 'text' }) => (
       value={value}
       onChange={(event) => onChange(event.target.value)}
       className="input text-sm"
+      {...props}
     />
   </label>
 );
